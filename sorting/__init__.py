@@ -12,6 +12,23 @@ class Shuffle(Algorithm):
             yield
 
 
+@dataclass
+class AlreadySorted(Algorithm):
+    def run(self):
+        for index in range(len(self.playground.main_array)):
+            self.playground.write(index, (0, index))
+            yield
+
+
+@dataclass
+class Reversed(AlreadySorted):
+    def run(self):
+        for _ in AlreadySorted.run(self):
+            yield
+        for _ in AlreadySorted.reversal(self, 0):
+            yield
+
+
 class Verify(Algorithm):
     def run(self):
         nums = self.playground.main_array
