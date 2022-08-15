@@ -122,7 +122,7 @@ class SortApp(tkinter.Tk, SortPlayground):
 
 
 def main():
-    root = SortApp(128, 0)
+    root = SortApp(512, 0)
     root.run()
 
 
