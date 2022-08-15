@@ -195,6 +195,9 @@ class MergeSort(Algorithm):
             for _ in self.out_of_place():
                 yield
 
+            self.playground.delete_array(1)
+            yield
+
 
 class RadixSort(Algorithm):
     mode: str = "LSD"

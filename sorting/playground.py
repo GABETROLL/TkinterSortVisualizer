@@ -1,52 +1,6 @@
 from time import sleep
 
 
-class MinHeap:
-    def __init__(self):
-        self.items = []
-
-    def read(self):
-        return self.items[0]
-
-    def insert(self, num: int):
-        self.items.append(num)
-
-        index = len(self.items) - 1
-
-        while 0 < index:
-            parent_index = (index - 1) >> 1
-
-            if self.items[parent_index] > self.items[index]:
-                self.items[index], self.items[parent_index] = self.items[parent_index], self.items[index]
-            else:
-                break
-
-            index = parent_index
-
-    def pop(self):
-        self.items[0], self.items[-1] = self.items[-1], self.items[0]
-
-        result = self.items.pop()
-
-        index = 0
-        while index < len(self.items):
-            left_child_index = index * 2 + 1
-            right_child_index = left_child_index + 1
-
-            if self.items[index] > self.items[left_child_index]:
-                self.items[index], self.items[left_child_index] = self.items[left_child_index], self.items[index]
-
-                index = left_child_index
-            elif self.items[index] > self.items[right_child_index]:
-                self.items[index], self.items[right_child_index] = self.items[right_child_index], self.items[index]
-
-                index = right_child_index
-            else:
-                break
-
-        return result
-
-
 class SortPlayground:
     """Playground for sorting made of sorting arrays.
     Counts swaps, comparisons, writes and reversals."""
