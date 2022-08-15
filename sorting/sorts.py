@@ -199,6 +199,7 @@ class MergeSort(Algorithm):
             yield
 
 
+@dataclass
 class RadixSort(Algorithm):
     mode: str = "LSD"
     base: int = 10
@@ -279,3 +280,48 @@ class RadixSort(Algorithm):
             pass
         else:
             raise ValueError("Invalid Radix Sort mode.")
+
+
+@dataclass
+class CountSort(Algorithm):
+    def run(self):
+        min_index = None
+        max_index = None
+
+        for index in range(len(self.playground.main_array)):
+            if min_index is None or self.playground.compare((0, index), "<", (0, min_index)):
+                yield
+
+                min_index = index
+            if max_index is None or self.playground.compare((0, max_index), "<", (0, index)):
+                yield
+
+                max_index = index
+
+        min_num = self.playground.read((0, min_index))
+        yield
+        max_num = self.playground.read((0, max_index))
+        yield
+
+        self.playground.spawn_new_array(max_num - min_num + 2)
+
+        for num in self.playground.array_iter(0):
+            yield
+
+            self.playground.increment(1, (1, num + min_num))
+            yield
+
+        index = 0
+        for num, num_count in enumerate(self.playground.array_iter(1)):
+            yield
+
+            num += min_num
+            # ?
+            for _ in range(num_count):
+                self.playground.write(num, (0, index))
+                yield
+
+                index += 1
+
+        self.playground.delete_array(1)
+        yield
