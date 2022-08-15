@@ -91,17 +91,23 @@ class HeapSort(Algorithm):
             self.playground.swap((0, 0), (0, sorted_index))
 
             index = 0
-            while (right_child_index := index * 2 + 2) < sorted_index:
-                left_child_index = right_child_index - 1
+            while (left_child_index := index * 2 + 1) < sorted_index:
+                right_child_index = left_child_index + 1
 
-                left_child = self.playground.read((0, left_child_index))
-                yield
-                right_child = self.playground.read((0, right_child_index))
-                yield
+                if right_child_index < sorted_index:
 
-                child_index = left_child_index if eval(f"{right_child}{comparison}{left_child}") else right_child_index
-                # must swap with its smallest child if mode is min;
-                # must swap with its biggest child if mode is max.
+                    left_child = self.playground.read((0, left_child_index))
+                    yield
+                    right_child = self.playground.read((0, right_child_index))
+                    yield
+
+                    child_index = left_child_index if eval(f"{right_child}{comparison}{left_child}") else right_child_index
+                    # must swap with its smallest child if mode is min;
+                    # must swap with its biggest child if mode is max.
+                else:
+                    # If right child index is in out of bounds,
+                    # left child is the only choice.
+                    child_index = left_child_index
 
                 should_swap = self.playground.compare((0, index), comparison, (0, child_index))
                 yield
