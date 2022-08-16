@@ -56,18 +56,22 @@ class SortPlayground:
         self.pointers = {index}
         self.arrays[index[0]][index[1]] = num
 
+        self.writes += 1
         sleep(self.delay)
 
     def increment(self, num: int, index: tuple[int, int]):
         self.pointers = {index}
         self.arrays[index[0]][index[1]] += num
 
+        self.writes += 1
         sleep(self.delay)
 
     def array_iter(self, array_index: int):
         for index, num in enumerate(self.arrays[array_index]):
             self.pointers = {index}
             yield num
+
+            sleep(self.delay)
 
     def compare(self, index_a: tuple[int, int], comparison: str, index_b: tuple[int, int]):
         """Compares nums at index_a and index_b and increases comparisons counter."""
@@ -83,5 +87,6 @@ class SortPlayground:
         self.arrays[index_a[0]][index_a[1]], self.arrays[index_b[0]][index_b[1]] = \
             self.arrays[index_b[0]][index_b[1]], self.arrays[index_a[0]][index_a[1]]
         self.swaps += 1
+        self.writes += 2
 
         sleep(self.delay)

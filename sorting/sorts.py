@@ -285,17 +285,20 @@ class RadixSort(Algorithm):
 @dataclass
 class CountSort(Algorithm):
     def run(self):
-        min_index = None
-        max_index = None
+        min_index = 0
+        max_index = 0
 
         for index in range(len(self.playground.main_array)):
-            if min_index is None or self.playground.compare((0, index), "<", (0, min_index)):
-                yield
+            new_min_found = self.playground.compare((0, index), "<", (0, min_index))
+            yield
 
+            if new_min_found:
                 min_index = index
-            if max_index is None or self.playground.compare((0, max_index), "<", (0, index)):
-                yield
 
+            new_max_found = self.playground.compare((0, max_index), "<", (0, index))
+            yield
+
+            if new_max_found:
                 max_index = index
 
         min_num = self.playground.read((0, min_index))
