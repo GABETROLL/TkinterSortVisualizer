@@ -23,6 +23,10 @@ class SortPlayground:
     def main_array(self):
         return self.arrays[0]
 
+    @property
+    def array_count(self):
+        return len(self.arrays)
+
     def reset(self):
         """Resets counters, deletes extra arrays and all pointers."""
         self.arrays = [list(range(self.capacity))]

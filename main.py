@@ -1,4 +1,5 @@
 import tkinter
+from threading import Thread
 from sorting import *
 from itertools import chain
 from colorsys import hsv_to_rgb
@@ -19,21 +20,14 @@ def rainbow_color(num: int, max_num: int):
     return '#%02x%02x%02x' % (r, g, b)
 
 
-class SortApp(tkinter.Tk, SortPlayground):
+class SortControl(Thread, SortPlayground):
     """Container for all sorts, settings and shuffles.
     Runs loop with algorithm coroutines during the main window mainloop.
     Controls playing and pausing."""
 
     def __init__(self, capacity: int, delay: float):
+        Thread.__init__(self)
         SortPlayground.__init__(self, capacity, delay)
-        tkinter.Tk.__init__(self)
-
-        self.canvas = tkinter.Canvas(self, width=1024, height=512)
-        self.canvas.pack()
-
-        self.play = tkinter.Button(self, text="play", command=self.pause_play)
-        self.play.pack()
-        # buttons
 
         self.sorts = [HeapSort(self), MergeSort(self), BubbleSort(self), RadixSort(self), CountSort(self), SelectionSort(self), InsertionSort(self)]
         self.sort = iter(())
@@ -46,16 +40,58 @@ class SortApp(tkinter.Tk, SortPlayground):
 
         self.reset()
 
+        self.exited = False
         self.playing = False
         # data
+
+    def reset(self):
+        """Resets self playground and coroutines."""
+        SortPlayground.reset(self)
+
+        self.sort = self.sorts[0].run()
+        self.shuffle = self.shuffles[0].run()
+        self.verify = self.verify_algorithm.run()
+
+    def stop(self):
+        self.playing = False
+        self.reset()
+
+    def pause_play(self):
+        self.playing = not self.playing
+
+    def exit(self):
+        self.exited = True
+
+    def run(self):
+        while not self.exited:
+            algorithms = chain(self.shuffle, self.sort, self.verify)
+
+            if self.playing:
+                try:
+                    next(algorithms)
+                except StopIteration:
+                    self.stop()
+
+
+class SortApp(tkinter.Tk):
+    def __init__(self, sort_control: SortControl):
+        tkinter.Tk.__init__(self)
+
+        self.sort_control = sort_control
+
+        self.canvas = tkinter.Canvas(self, width=1024, height=512)
+        self.canvas.pack()
+
+        self.play = tkinter.Button(self, text="play", command=self.sort_control.pause_play)
+        self.play.pack()
 
     def display(self):
         self.canvas.delete("all")
 
-        bar_width = self.canvas.winfo_width() / (self.capacity + 1)
-        max_height = self.canvas.winfo_height() / len(self.arrays)
+        bar_width = self.canvas.winfo_width() / (self.sort_control.capacity + 1)
+        max_height = self.canvas.winfo_height() / self.sort_control.array_count
 
-        for array_index, array in enumerate(self.arrays):
+        for array_index, array in enumerate(self.sort_control.arrays):
 
             biggest = max(array)
 
@@ -70,7 +106,7 @@ class SortApp(tkinter.Tk, SortPlayground):
 
                 y0 = max_height * array_index
 
-                color = "black" if (array_index, num_index) in self.pointers else rainbow_color(num, biggest)
+                color = "black" if (array_index, num_index) in self.sort_control.pointers else rainbow_color(num, biggest)
 
                 self.canvas.create_rectangle(x0,
                                              y0,
@@ -79,51 +115,32 @@ class SortApp(tkinter.Tk, SortPlayground):
                                              fill=color)
         self.canvas.update()
 
-    def reset(self):
-        """Resets self playground and coroutines."""
-        SortPlayground.reset(self)
-
-        self.sort = self.sorts[0].run()
-        self.shuffle = self.shuffles[0].run()
-        self.verify = self.verify_algorithm.run()
-
-    def stop(self):
-        self.playing = False
-        self.reset()
-        self.play.config(text="play")
-
-    def pause_play(self):
-        self.playing = not self.playing
-        self.play.config(text="pause" if self.playing else "play")
-
-    def run(self):
+    def mainloop(self, n: int = ...) -> None:
         while True:
-            algorithms = chain(self.shuffle, self.sort, self.verify)
-
-            if self.playing:
+            if self.sort_control.playing:
                 try:
-                    next(algorithms)
-                except StopIteration:
-                    self.stop()
-
-                    continue
+                    self.display()
+                except tkinter.TclError:
+                    break
                 else:
-                    try:
-                        self.display()
-                    except tkinter.TclError:
-                        break
-
+                    self.update()
+                    continue
             try:
                 self.winfo_exists()
             except tkinter.TclError:
                 break
-
-            self.update()
+            else:
+                self.update()
+        # Please let me know if this code can be improved...
 
 
 def main():
-    root = SortApp(256, 0)
-    root.run()
+    core = SortControl(128, 0.001)
+    front_end = SortApp(core)
+    core.start()
+    front_end.mainloop()
+    core.exit()
+    core.join()
 
 
 if __name__ == "__main__":
