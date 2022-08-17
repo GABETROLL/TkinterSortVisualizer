@@ -76,6 +76,7 @@ class SortPlayground:
     def compare(self, index_a: tuple[int, int], comparison: str, index_b: tuple[int, int]):
         """Compares nums at index_a and index_b and increases comparisons counter."""
         self.pointers = {index_a, index_b}
+        self.reads += 2
         self.comparisons += 1
 
         sleep(self.delay)

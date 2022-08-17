@@ -35,7 +35,7 @@ class SortApp(tkinter.Tk, SortPlayground):
         self.play.pack()
         # buttons
 
-        self.sorts = [CountSort(self), MergeSort(self), RadixSort(self), HeapSort(self), BubbleSort(self), SelectionSort(self), InsertionSort(self)]
+        self.sorts = [HeapSort(self), MergeSort(self), BubbleSort(self), RadixSort(self), CountSort(self), SelectionSort(self), InsertionSort(self)]
         self.sort = iter(())
 
         self.shuffles = [Shuffle(self), AlreadySorted(self), Reversed(self)]
