@@ -43,6 +43,14 @@ class SortPlayground:
 
         sleep(self.delay)
 
+    def copy_array(self, input_array_index: int, output_array_index: int):
+        for index in range(len(self.arrays[input_array_index])):
+            num = self.read((input_array_index, index))
+            yield
+
+            self.write(num, (output_array_index, index))
+            yield
+
     def delete_array(self, index: int):
         self.arrays.pop(index)
 

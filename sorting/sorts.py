@@ -283,6 +283,41 @@ class RadixSort(Algorithm):
 
 
 @dataclass
+class PigeonholeSort(Algorithm):
+    def run(self):
+        min_num_index = (0, 0)
+        for index in range(len(self.playground.main_array)):
+            current_index = (0, index)
+
+            new_min_number = self.playground.compare(current_index, "<", min_num_index)
+            yield
+
+            if new_min_number:
+                min_num_index = current_index
+
+        min_num = self.playground.read(min_num_index)
+        yield
+
+        self.playground.spawn_new_array(len(self.playground.main_array))
+        yield
+
+        for index in range(len(self.playground.main_array)):
+            num = self.playground.read((0, index))
+            yield
+
+            copy_array_index = (1, num - min_num)
+
+            self.playground.write(num, copy_array_index)
+            yield
+
+        for _ in self.playground.copy_array(1, 0):
+            yield
+
+        self.playground.delete_array(1)
+        yield
+
+
+@dataclass
 class CountSort(Algorithm):
     def run(self):
         min_index = 0

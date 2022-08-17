@@ -29,7 +29,7 @@ class SortControl(Thread, SortPlayground):
         Thread.__init__(self)
         SortPlayground.__init__(self, capacity, delay)
 
-        self.sorts = [HeapSort(self), MergeSort(self), BubbleSort(self), RadixSort(self), CountSort(self), SelectionSort(self), InsertionSort(self)]
+        self.sorts = [PigeonholeSort(self), HeapSort(self), MergeSort(self), BubbleSort(self), RadixSort(self), CountSort(self), SelectionSort(self), InsertionSort(self)]
         self.sort = iter(())
 
         self.shuffles = [Shuffle(self), AlreadySorted(self), Reversed(self)]
