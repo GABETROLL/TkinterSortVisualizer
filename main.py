@@ -112,30 +112,25 @@ class SortApp(tkinter.Tk):
                                              y0,
                                              x1,
                                              y0 + height,
-                                             fill=color)
+                                             fill=color,
+                                             outline=color)
         self.canvas.update()
 
     def mainloop(self, n: int = ...) -> None:
         while True:
-            if self.sort_control.playing:
-                try:
-                    self.display()
-                except tkinter.TclError:
-                    break
-                else:
-                    self.update()
-                    continue
             try:
                 self.winfo_exists()
             except tkinter.TclError:
                 break
             else:
+                if self.sort_control.playing:
+                    self.display()
                 self.update()
         # Please let me know if this code can be improved...
 
 
 def main():
-    core = SortControl(128, 0.001)
+    core = SortControl(512, 0.001)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
