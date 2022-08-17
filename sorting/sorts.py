@@ -363,3 +363,6 @@ class CountSort(Algorithm):
 
         self.playground.delete_array(1)
         yield
+
+
+sorts = [BubbleSort, InsertionSort, SelectionSort, HeapSort, RadixSort, PigeonholeSort, CountSort]

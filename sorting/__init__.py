@@ -29,6 +29,9 @@ class Reversed(AlreadySorted):
             yield
 
 
+shuffles = [Shuffle, Reversed, AlreadySorted]
+
+
 class Verify(Algorithm):
     def run(self):
         nums = self.playground.main_array

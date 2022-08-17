@@ -29,10 +29,10 @@ class SortControl(Thread, SortPlayground):
         Thread.__init__(self)
         SortPlayground.__init__(self, capacity, delay)
 
-        self.sorts = [PigeonholeSort(self), HeapSort(self), MergeSort(self), BubbleSort(self), RadixSort(self), CountSort(self), SelectionSort(self), InsertionSort(self)]
+        self.sorts = [sort(self) for sort in sorts]
         self.sort = iter(())
 
-        self.shuffles = [Shuffle(self), AlreadySorted(self), Reversed(self)]
+        self.shuffles = [shuffle(self) for shuffle in shuffles]
         self.shuffle = iter(())
 
         self.verify_algorithm = Verify(self)
@@ -121,16 +121,15 @@ class SortApp(tkinter.Tk):
             try:
                 self.winfo_exists()
             except tkinter.TclError:
-                break
+                return
             else:
-                if self.sort_control.playing:
-                    self.display()
+                self.display()
                 self.update()
         # Please let me know if this code can be improved...
 
 
 def main():
-    core = SortControl(512, 0.001)
+    core = SortControl(512, 0.0001)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
