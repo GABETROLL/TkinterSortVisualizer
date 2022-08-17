@@ -1,5 +1,6 @@
 import tkinter
 from threading import Thread
+from time import sleep
 from sorting import *
 from itertools import chain
 from colorsys import hsv_to_rgb
@@ -27,7 +28,9 @@ class SortControl(Thread, SortPlayground):
 
     def __init__(self, capacity: int, delay: float):
         Thread.__init__(self)
-        SortPlayground.__init__(self, capacity, delay)
+        SortPlayground.__init__(self, capacity)
+
+        self.delay = delay
 
         self.sorts = [sort(self) for sort in sorts]
         self.sort = iter(())
@@ -71,6 +74,7 @@ class SortControl(Thread, SortPlayground):
                     next(algorithms)
                 except StopIteration:
                     self.stop()
+            sleep(self.delay)
 
 
 class SortApp(tkinter.Tk):
