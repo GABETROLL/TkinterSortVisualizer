@@ -127,6 +127,69 @@ class HeapSort(Algorithm):
 
 
 @dataclass
+class QuickSort(Algorithm):
+    def quick_sort(self, start=0, end=0):
+        # [6, 8, 1, 7, 5, 9, 2, 0, 4, 3]
+        # 6, 5, 3 -> median := 5
+        # [6, 8, 1, 7, 5, 9, 2, 0, 4, 3]
+        #  ^           p
+        # [5, 8, 1, 7, 6, 9, 2, 0, 4, 3]
+        #  p  ^
+        #  p     ^
+        # [5, 1, 8, 7, 6, 9, 2, 0, 4, 3]
+        # [1, 5, 8, 7, 6, 9, 2, 0, 4, 3]
+        #     p     ^
+        #     p        ^
+        #     p           ^
+        #     p              ^
+        # [1, 5, 2, 7, 6, 9, 8, 0, 4, 3]
+        # [1, 2, 5, 7, 6, 9, 8, 0, 4, 3]
+        #        p              ^
+        # [1, 2, 5, 0, 6, 9, 8, 7, 4, 3]
+        # [1, 2, 0, 5, 6, 9, 8, 7, 4, 3]
+        #           p              ^
+        # [1, 2, 0, 5, 4, 9, 8, 7, 6, 3]
+        # [1, 2, 0, 4, 5, 9, 8, 7, 6, 3]
+        #              p              ^
+        # [1, 2, 0, 4, 5, 3, 8, 7, 6, 9]
+        # [1, 2, 0, 4, 3, 5, 8, 7, 6, 9]
+        # repeat again with left and right halves.
+        if end == 0:
+            end = len(self.playground.main_array)
+
+        if 1 < (end - start):
+
+            pivot_index = start
+            pointer_index = start + 1
+
+            while pointer_index < end:
+                should_swap = self.playground.compare((0, pointer_index), "<", (0, pivot_index))
+                yield
+
+                if should_swap:
+                    self.playground.swap((0, pointer_index), (0, pivot_index + 1))
+                    yield
+
+                    self.playground.swap((0, pivot_index), (0, pivot_index + 1))
+                    yield
+
+                    pivot_index += 1
+
+                pointer_index += 1
+
+            print(start, pivot_index, pivot_index + 1, end)
+
+            for _ in self.quick_sort(start, pivot_index):
+                yield
+            for _ in self.quick_sort(pivot_index + 1, end):
+                yield
+
+    def run(self):
+        for _ in self.quick_sort():
+            yield
+
+
+@dataclass
 class MergeSort(Algorithm):
     in_place: bool = False
 
@@ -365,4 +428,4 @@ class CountSort(Algorithm):
         yield
 
 
-sorts = [BubbleSort, InsertionSort, SelectionSort, HeapSort, RadixSort, PigeonholeSort, CountSort]
+sorts = [QuickSort, MergeSort, RadixSort, BubbleSort, InsertionSort, SelectionSort, HeapSort, PigeonholeSort, CountSort]
