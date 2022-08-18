@@ -157,30 +157,30 @@ class QuickSort(Algorithm):
         if end == 0:
             end = len(self.playground.main_array)
 
-        if 1 < (end - start):
+        pivot_index = start
+        pointer_index = start + 1
 
-            pivot_index = start
-            pointer_index = start + 1
+        while pointer_index < end:
+            should_swap = self.playground.compare((0, pointer_index), "<", (0, pivot_index))
+            yield
 
-            while pointer_index < end:
-                should_swap = self.playground.compare((0, pointer_index), "<", (0, pivot_index))
+            if should_swap:
+                self.playground.swap((0, pointer_index), (0, pivot_index + 1))
                 yield
 
-                if should_swap:
-                    self.playground.swap((0, pointer_index), (0, pivot_index + 1))
-                    yield
+                self.playground.swap((0, pivot_index), (0, pivot_index + 1))
+                yield
 
-                    self.playground.swap((0, pivot_index), (0, pivot_index + 1))
-                    yield
+                pivot_index += 1
 
-                    pivot_index += 1
+            pointer_index += 1
 
-                pointer_index += 1
+        print(start, pivot_index, pivot_index + 1, end)
 
-            print(start, pivot_index, pivot_index + 1, end)
-
+        if 1 < (pivot_index - start):
             for _ in self.quick_sort(start, pivot_index):
                 yield
+        if 1 < (end - (pivot_index + 1)):
             for _ in self.quick_sort(pivot_index + 1, end):
                 yield
 
