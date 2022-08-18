@@ -175,7 +175,7 @@ class QuickSort(Algorithm):
 
             pointer_index += 1
 
-        print(start, pivot_index, pivot_index + 1, end)
+        # print(start, pivot_index, pivot_index + 1, end)
 
         if 1 < (pivot_index - start):
             for _ in self.quick_sort(start, pivot_index):

@@ -86,10 +86,16 @@ class SortApp(tkinter.Tk):
         self.canvas = tkinter.Canvas(self, width=1024, height=512)
         self.canvas.pack()
 
-        self.play = tkinter.Button(self, text="play", command=self.sort_control.pause_play)
+        self.play = tkinter.Button(self, text=self.play_text, command=self.sort_control.pause_play)
         self.play.pack()
 
+    @property
+    def play_text(self):
+        return "pause" if self.sort_control.playing else "play"
+
     def display(self):
+        self.play.config(text=self.play_text)
+
         self.canvas.delete("all")
 
         bar_width = self.canvas.winfo_width() / (self.sort_control.capacity + 1)
