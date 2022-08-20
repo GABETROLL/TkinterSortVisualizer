@@ -3,6 +3,7 @@ from threading import Thread
 from time import sleep
 from sorting import *
 from itertools import chain
+from math import log2
 from colorsys import hsv_to_rgb
 
 
@@ -62,6 +63,9 @@ class SortControl(Thread, SortPlayground):
     def pause_play(self):
         self.playing = not self.playing
 
+    def change_delay(self, s: float):
+        self.delay = s
+
     def exit(self):
         self.exited = True
 
@@ -89,9 +93,29 @@ class SortApp(tkinter.Tk):
         self.play = tkinter.Button(self, text=self.play_text, command=self.sort_control.pause_play)
         self.play.pack()
 
+        self.min_delay = 0
+        self.max_delay = 1
+        self.display_factor = 12
+        self.log_factor = 2 ** (1 / self.display_factor)
+        # in seconds
+        self.speed_control = tkinter.Scale(self,
+                                           from_=self.max_delay * self.display_factor,
+                                           to=self.min_delay,
+                                           orient=tkinter.HORIZONTAL)
+        # 1s delay to 0s delay mapped as 1023 -> 0
+        self.speed_control.pack()
+
     @property
     def play_text(self):
         return "pause" if self.sort_control.playing else "play"
+
+    def control_speed(self):
+        visual_delay = int(self.speed_control.get())
+        base = 2
+        delay = (base ** visual_delay - 1) / (base ** self.display_factor - 1)
+        # It's easier to slide the speed Scale when speeds are exponential.
+
+        self.sort_control.change_delay(delay)
 
     def display(self):
         self.play.config(text=self.play_text)
@@ -133,6 +157,7 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
+                self.control_speed()
                 self.display()
                 self.update()
         # Please let me know if this code can be improved...
