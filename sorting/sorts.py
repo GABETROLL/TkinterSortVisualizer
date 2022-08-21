@@ -4,11 +4,21 @@ from itertools import count
 
 @dataclass
 class BubbleSort(Algorithm):
-    optimized: bool = True
+    def run(self):
+        nums = self.playground.arrays[0]
 
-    def __str__(self):
-        return ("Optimized" if self.optimized else "") + "Bubble Sort"
+        for sorted_elements in range(len(nums)):
+            for index in range(len(nums)):
 
+                if self.playground.compare((0, index), ">", (0, index + 1)):
+                    yield
+
+                    self.playground.swap((0, index), (0, index + 1))
+                    yield
+
+
+@dataclass
+class OptimizedBubbleSort(BubbleSort):
     def run(self):
         nums = self.playground.arrays[0]
 
@@ -24,8 +34,6 @@ class BubbleSort(Algorithm):
 
 @dataclass
 class InsertionSort(Algorithm):
-    binary_search: bool = False
-
     def run(self):
         for unsorted_start_index in range(1, len(self.playground.arrays[0])):
             index = unsorted_start_index
@@ -40,9 +48,13 @@ class InsertionSort(Algorithm):
 
 
 @dataclass
-class SelectionSort(Algorithm):
-    double: bool = False
+class BinaryInsertionSort(InsertionSort):
+    def run(self):
+        pass
 
+
+@dataclass
+class SelectionSort(Algorithm):
     def run(self):
         for unsorted_start_index in range(len(self.playground.main_array)):
             smallest = None
@@ -58,14 +70,18 @@ class SelectionSort(Algorithm):
 
 
 @dataclass
-class HeapSort(Algorithm):
-    mode: str = "min"
-
+class DoubleSelectionSort(SelectionSort):
     def run(self):
+        pass
+
+
+@dataclass
+class HeapSort(Algorithm):
+    def _run(self, mode="min"):
         # Heapify.
-        if self.mode == "min":
+        if mode == "min":
             comparison = ">"
-        elif self.mode == "max":
+        elif mode == "max":
             comparison = "<"
         else:
             raise ValueError("Invalid HeapSort mode.")
@@ -101,7 +117,8 @@ class HeapSort(Algorithm):
                     right_child = self.playground.read((0, right_child_index))
                     yield
 
-                    child_index = left_child_index if eval(f"{right_child}{comparison}{left_child}") else right_child_index
+                    child_index = left_child_index if eval(
+                        f"{right_child}{comparison}{left_child}") else right_child_index
                     # must swap with its smallest child if mode is min;
                     # must swap with its biggest child if mode is max.
                 else:
@@ -121,9 +138,24 @@ class HeapSort(Algorithm):
                     break
                     # Done bubbling.
 
-        if self.mode == "min":
+        if mode == "min":
             for _ in self.reversal(0):
                 yield
+
+    def run(self):
+        raise NotImplementedError("HeapSort is abstract.")
+
+
+@dataclass
+class MaxHeapSort(HeapSort):
+    def run(self):
+        self._run("max")
+
+
+@dataclass
+class MinHeapSort(HeapSort):
+    def run(self):
+        self._run("min")
 
 
 @dataclass
@@ -263,9 +295,21 @@ class MergeSort(Algorithm):
 
 
 @dataclass
+class MergeSortInPlace(MergeSort):
+    def run(self):
+        pass
+
+
+@dataclass
 class RadixSort(Algorithm):
-    mode: str = "LSD"
     base: int = 10
+
+    def run(self):
+        raise NotImplementedError
+
+
+@dataclass
+class RadixLSDSort(RadixSort):
 
     def lsd_digit(self, num: int, place: int):
         digit = 0
@@ -275,7 +319,7 @@ class RadixSort(Algorithm):
 
         return digit, num
 
-    def lsd(self):
+    def run(self):
         self.playground.spawn_new_array(self.playground.capacity)
         copy_array_index = 1
         yield
@@ -336,13 +380,10 @@ class RadixSort(Algorithm):
         self.playground.delete_array(2)
         self.playground.delete_array(copy_array_index)
 
+
+class RadixMSDSort(RadixSort):
     def run(self):
-        if self.mode == "LSD":
-            return self.lsd()
-        elif self.mode == "MSD":
-            pass
-        else:
-            raise ValueError("Invalid Radix Sort mode.")
+        pass
 
 
 @dataclass
