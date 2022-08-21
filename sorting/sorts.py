@@ -446,7 +446,6 @@ class GravitySort(Algorithm):
                 max_num = num
 
         for height in range(max_num, 0, -1):
-
             beads_at_height = 0
 
             for index in range(array_length):
@@ -460,7 +459,7 @@ class GravitySort(Algorithm):
                     # decrement
                 yield
 
-            for index in range(array_length - 1, array_length - beads_at_height, -1):
+            for index in range(array_length - 1, array_length - 1 - beads_at_height, -1):
                 self.playground.increment(1, (0, index))
                 yield
 
