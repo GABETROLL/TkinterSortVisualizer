@@ -3,6 +3,15 @@ from random import randint
 
 
 @dataclass
+class Random(Algorithm):
+    def run(self):
+        nums_len = len(self.playground.main_array)
+        for index in range(nums_len):
+            self.playground.write(randint(0, nums_len - 1), (0, index))
+            yield
+
+
+@dataclass
 class Shuffle(Algorithm):
     def run(self):
         nums = self.playground.main_array
@@ -44,7 +53,7 @@ class Reversed(AlreadySorted):
             yield
 
 
-shuffles = [Shuffle, ManySimilar, Reversed, AlreadySorted]
+shuffles = [Random, Shuffle, ManySimilar, Reversed, AlreadySorted]
 
 
 class Verify(Algorithm):
