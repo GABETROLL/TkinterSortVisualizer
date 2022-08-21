@@ -3,7 +3,6 @@ from threading import Thread
 from time import sleep
 from sorting import *
 from itertools import chain
-from math import log2
 from colorsys import hsv_to_rgb
 
 

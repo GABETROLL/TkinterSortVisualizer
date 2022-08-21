@@ -428,4 +428,42 @@ class CountSort(Algorithm):
         yield
 
 
-sorts = [QuickSort, MergeSort, RadixSort, BubbleSort, InsertionSort, SelectionSort, HeapSort, PigeonholeSort, CountSort]
+@dataclass
+class GravitySort(Algorithm):
+    def run(self):
+        array_length = len(self.playground.main_array)
+
+        self.playground.spawn_new_array(array_length)
+        for _ in self.playground.copy_array(0, 1):
+            yield
+        copy_array_index = 1
+
+        max_num = 0
+        for num in self.playground.array_iter(0):
+            yield
+
+            if num > max_num:
+                max_num = num
+
+        for height in range(max_num, 0, -1):
+
+            beads_at_height = 0
+
+            for index in range(array_length):
+                num = self.playground.read((copy_array_index, index))
+                yield
+
+                if height <= num:
+                    beads_at_height += 1
+
+                    self.playground.increment(-1, (0, index))
+                    # decrement
+                yield
+
+            for index in range(array_length - 1, array_length - beads_at_height, -1):
+                self.playground.increment(1, (0, index))
+                yield
+
+
+sorts = [GravitySort, QuickSort, MergeSort, RadixSort, BubbleSort, InsertionSort, SelectionSort, HeapSort,
+         PigeonholeSort, CountSort]
