@@ -24,7 +24,7 @@ class SortPlayground:
 
     def reset(self):
         """Resets counters, deletes extra arrays and all pointers."""
-        self.arrays = [list(range(self.capacity))]
+        self.arrays = self.arrays[:1]
         self.pointers = set()
 
         self.swaps = 0

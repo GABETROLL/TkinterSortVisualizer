@@ -13,6 +13,21 @@ class Shuffle(Algorithm):
 
 
 @dataclass
+class ManySimilar(Shuffle):
+    div: int = 16
+
+    def run(self):
+        for index in range(len(self.playground.main_array)):
+            num = index // self.div * self.div
+
+            self.playground.write(num, (0, index))
+            yield
+
+        for _ in Shuffle.run(self):
+            yield
+
+
+@dataclass
 class AlreadySorted(Algorithm):
     def run(self):
         for index in range(len(self.playground.main_array)):
@@ -29,7 +44,7 @@ class Reversed(AlreadySorted):
             yield
 
 
-shuffles = [Shuffle, Reversed, AlreadySorted]
+shuffles = [ManySimilar, Shuffle, Reversed, AlreadySorted]
 
 
 class Verify(Algorithm):

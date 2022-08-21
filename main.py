@@ -163,7 +163,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(512, 0.002)
+    core = SortControl(1024, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
