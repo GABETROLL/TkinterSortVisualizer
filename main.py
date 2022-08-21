@@ -33,6 +33,7 @@ class SortControl(Thread, SortPlayground):
         self.delay = delay
 
         self.sorts = [sort(self) for sort in sorts]
+        self.sort_index = 0
         self.sort = iter(())
 
         self.shuffles = [shuffle(self) for shuffle in shuffles]
@@ -51,7 +52,7 @@ class SortControl(Thread, SortPlayground):
         """Resets self playground and coroutines."""
         SortPlayground.reset(self)
 
-        self.sort = self.sorts[0].run()
+        self.sort = self.sorts[self.sort_index].run()
         self.shuffle = self.shuffles[0].run()
         self.verify = self.verify_algorithm.run()
 
@@ -64,6 +65,13 @@ class SortControl(Thread, SortPlayground):
 
     def change_delay(self, s: float):
         self.delay = s
+
+    def choose_sort(self, name: str):
+        for index, sort in enumerate(self.sorts):
+            if sort.__doc__ == name:
+                self.sort_index = index
+
+        self.stop()
 
     def exit(self):
         self.exited = True
@@ -91,6 +99,11 @@ class SortApp(tkinter.Tk):
 
         self.play = tkinter.Button(self, text=self.play_text, command=self.sort_control.pause_play)
         self.play.pack()
+
+        self.sorts_button = tkinter.Button(self, text="Sorts", command=self.choose_sort)
+        self.sorts_button.pack()
+        self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
+        self.choosing_sort = False
 
         self.min_delay = 0
         self.max_delay = 1
@@ -148,6 +161,32 @@ class SortApp(tkinter.Tk):
                                              fill=color,
                                              outline=color)
         self.canvas.update()
+
+    def clear_screen(self):
+        for child in self.winfo_children():
+            child.pack_forget()
+
+    def stop_choosing_sort(self):
+        self.clear_screen()
+        self.choosing_sort = False
+
+        sort_name = self.sort_variable.get()
+        self.sort_control.choose_sort(sort_name)
+
+        self.canvas.pack()
+        self.play.pack()
+        self.speed_control.pack()
+        self.sorts_button.pack()
+
+    def choose_sort(self):
+        self.clear_screen()
+
+        self.choosing_sort = True
+
+        sort_names = (sort.__doc__ for sort in sorts)
+
+        tkinter.OptionMenu(self, self.sort_variable, self.sort_variable.get(), *sort_names).pack()
+        tkinter.Button(self, text="OK", command=self.stop_choosing_sort).pack()
 
     def mainloop(self, n: int = ...) -> None:
         while True:
