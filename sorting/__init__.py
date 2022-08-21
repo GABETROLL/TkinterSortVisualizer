@@ -44,7 +44,7 @@ class Reversed(AlreadySorted):
             yield
 
 
-shuffles = [ManySimilar, Shuffle, Reversed, AlreadySorted]
+shuffles = [Shuffle, ManySimilar, Reversed, AlreadySorted]
 
 
 class Verify(Algorithm):

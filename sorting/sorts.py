@@ -302,9 +302,34 @@ class MergeSort(Algorithm):
 
 @dataclass
 class MergeSortInPlace(MergeSort):
-    """In-place Merge Sort"""
+    """Merge Sort (In-place: Insertion Sort)"""
+    def in_place(self, start, end):
+        section_length = end - start
+
+        if section_length > 1:
+            midpoint = start + section_length // 2
+
+            for _ in self.in_place(start, midpoint):
+                yield
+            for _ in self.in_place(midpoint, end):
+                yield
+
+            for merge_index in range(start, end):
+
+                for insert_index in range(merge_index, start, -1):
+                    a, b = (0, insert_index - 1), (0, insert_index)
+
+                    should_insert = self.playground.compare(a, ">", b)
+                    yield
+
+                    if should_insert:
+                        self.playground.swap(a, b)
+                        continue
+                    break
+
     def run(self):
-        pass
+        for _ in self.in_place(0, len(self.playground.main_array)):
+            yield
 
 
 @dataclass
@@ -518,4 +543,4 @@ class GravitySort(Algorithm):
 
 
 sorts = [BubbleSort, OptimizedBubbleSort, InsertionSort, SelectionSort, MaxHeapSort, MinHeapSort, QuickSort, MergeSort,
-         RadixLSDSort, PigeonholeSort, CountSort, GravitySort]
+         MergeSortInPlace, RadixLSDSort, PigeonholeSort, CountSort, GravitySort]
