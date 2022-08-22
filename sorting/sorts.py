@@ -314,7 +314,7 @@ class MergeSortInPlace(MergeSort):
             for _ in self.in_place(midpoint, end):
                 yield
 
-            for merge_index in range(start, end):
+            for merge_index in range(midpoint, end):
 
                 for insert_index in range(merge_index, start, -1):
                     a, b = (0, insert_index - 1), (0, insert_index)
