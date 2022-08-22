@@ -37,6 +37,7 @@ class SortControl(Thread, SortPlayground):
         self.sort = iter(())
 
         self.shuffles = [shuffle(self) for shuffle in shuffles]
+        self.shuffle_index = 0
         self.shuffle = iter(())
 
         self.verify_algorithm = Verify(self)
@@ -53,7 +54,7 @@ class SortControl(Thread, SortPlayground):
         SortPlayground.reset(self)
 
         self.sort = self.sorts[self.sort_index].run()
-        self.shuffle = self.shuffles[0].run()
+        self.shuffle = self.shuffles[self.shuffle_index].run()
         self.verify = self.verify_algorithm.run()
 
     def stop(self):
@@ -66,12 +67,21 @@ class SortControl(Thread, SortPlayground):
     def change_delay(self, s: float):
         self.delay = s
 
-    def choose_sort(self, name: str):
-        for index, sort in enumerate(self.sorts):
-            if sort.__doc__ == name:
-                self.sort_index = index
+    def _choose_algorithm(self, sort: bool, name: str):
+        for index, algorithm in enumerate(self.sorts if sort else self.shuffles):
+            if algorithm.__doc__ == name:
+                if sort:
+                    self.sort_index = index
+                else:
+                    self.shuffle_index = index
 
         self.stop()
+
+    def choose_shuffle(self, name: str):
+        self._choose_algorithm(False, name)
+
+    def choose_sort(self, name: str):
+        self._choose_algorithm(True, name)
 
     def exit(self):
         self.exited = True
@@ -100,9 +110,10 @@ class SortApp(tkinter.Tk):
         self.play = tkinter.Button(self, text=self.play_text, command=self.sort_control.pause_play)
         self.play.pack()
 
-        self.sorts_button = tkinter.Button(self, text="Sorts", command=self.choose_sort)
+        self.sorts_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.exit_settings)
         self.sorts_button.pack()
         self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
+        self.shuffle_variable = tkinter.StringVar(self, "Random")
         self.choosing_sort = False
 
         self.min_delay = 0
@@ -166,27 +177,33 @@ class SortApp(tkinter.Tk):
         for child in self.winfo_children():
             child.pack_forget()
 
-    def stop_choosing_sort(self):
+    def goto_settings(self):
         self.clear_screen()
         self.choosing_sort = False
 
         sort_name = self.sort_variable.get()
         self.sort_control.choose_sort(sort_name)
 
+        shuffle_name = self.shuffle_variable.get()
+        self.sort_control.choose_shuffle(shuffle_name)
+
         self.canvas.pack()
         self.play.pack()
         self.speed_control.pack()
         self.sorts_button.pack()
 
-    def choose_sort(self):
+    def exit_settings(self):
         self.clear_screen()
 
         self.choosing_sort = True
 
         sort_names = (sort.__doc__ for sort in sorts)
-
         tkinter.OptionMenu(self, self.sort_variable, self.sort_variable.get(), *sort_names).pack()
-        tkinter.Button(self, text="OK", command=self.stop_choosing_sort).pack()
+
+        shuffle_names = (shuffle.__doc__ for shuffle in shuffles)
+        tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
+
+        tkinter.Button(self, text="OK", command=self.goto_settings).pack()
 
     def mainloop(self, n: int = ...) -> None:
         while True:
