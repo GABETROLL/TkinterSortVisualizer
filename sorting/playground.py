@@ -80,6 +80,7 @@ class SortPlayground:
 
     def swap(self, index_a: tuple[int, int], index_b: tuple[int, int]):
         """Swaps nums at index_a and index_b and increases swaps counter."""
+        self.pointers = {index_a, index_b}
         self.arrays[index_a[0]][index_a[1]], self.arrays[index_b[0]][index_b[1]] = \
             self.arrays[index_b[0]][index_b[1]], self.arrays[index_a[0]][index_a[1]]
         self.swaps += 1
