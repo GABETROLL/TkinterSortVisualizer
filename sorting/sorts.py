@@ -486,7 +486,7 @@ class CountSort(Algorithm):
         for num in self.playground.array_iter(0):
             yield
 
-            self.playground.increment(1, (1, num + min_num))
+            self.playground.increment(1, (1, num - min_num))
             yield
 
         index = 0
