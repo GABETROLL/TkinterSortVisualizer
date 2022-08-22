@@ -4,6 +4,7 @@ from random import randint
 
 @dataclass
 class Random(Algorithm):
+    """Random"""
     def run(self):
         nums_len = len(self.playground.main_array)
         for index in range(nums_len):
@@ -13,6 +14,7 @@ class Random(Algorithm):
 
 @dataclass
 class Shuffle(Algorithm):
+    """Linear Shuffle"""
     def run(self):
         nums = self.playground.main_array
 
@@ -23,6 +25,7 @@ class Shuffle(Algorithm):
 
 @dataclass
 class ManySimilar(Shuffle):
+    """Many Similar"""
     div: int = 16
 
     def run(self):
@@ -38,6 +41,7 @@ class ManySimilar(Shuffle):
 
 @dataclass
 class AlreadySorted(Algorithm):
+    """Already Sorted"""
     def run(self):
         for index in range(len(self.playground.main_array)):
             self.playground.write(index, (0, index))
@@ -46,6 +50,7 @@ class AlreadySorted(Algorithm):
 
 @dataclass
 class Reversed(AlreadySorted):
+    """Reversed Linear"""
     def run(self):
         for _ in AlreadySorted.run(self):
             yield
