@@ -126,17 +126,38 @@ class AudioControl(sounddevice.OutputStream):
 
     def audify(self):
         """Changes the current frequency played."""
-        self.frequencies = [self.frequency(num) for num in self.sort_control.read_at_pointers()]
+        if not self.sort_control.playing:
+            self.stop()
+            self.frequencies = []
+            return
+        elif self.stopped:
+            self.start()
+
+        # stopped, playing, frequencies, new_frequencies:
+        #   True     False      []             []
+        #   False    True       []            [...]
+        #   False    True      [...]          [...]
+        #   False    True      [...]           []
+
+        new_frequencies = [self.frequency(num) for num in self.sort_control.read_at_pointers()]
+        if new_frequencies:
+            self.frequencies = new_frequencies
 
     def sine_waves(self, frames: int):
         # frames of audio controller
         """Returns sine_waves of all nums currently pointed at by self.sort_control
         as added sine waves."""
-        result = (self.start_index + numpy.arange(frames)) / self.samplerate
-        result = result.reshape(-1, 1)
+        t = (self.start_index + numpy.arange(frames)) / self.samplerate
+        t = t.reshape(-1, 1)
+
+        result = None
 
         for frequency in self.frequencies:
-            result += numpy.sin(2 * numpy.pi * frequency * result)
+            wave = numpy.sin(2 * numpy.pi * frequency * t)
+            if result is None:
+                result = wave
+            else:
+                result += wave
             # args.amplitude * numpy.sin(2 * numpy.pi * args.frequency * t)
 
         return result
@@ -154,8 +175,7 @@ class SortApp(tkinter.Tk):
 
         self.sort_control = sort_control
 
-        self.audio_control = AudioControl(self.sort_control, 64, 1024)
-        self.audio_control.start()
+        self.audio_control = AudioControl(self.sort_control, 128, 4)
 
         self.canvas = tkinter.Canvas(self, width=1024, height=512)
         self.canvas.pack()
@@ -273,7 +293,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(256, 0.002)
+    core = SortControl(32, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
