@@ -1,9 +1,15 @@
 import tkinter
+import sounddevice
+import numpy
+# for audio
 from threading import Thread
 from time import sleep
+# for core
 from sorting import *
 from itertools import chain
+# for controlling core
 from colorsys import hsv_to_rgb
+# for display
 
 
 def rainbow_color(num: int, max_num: int):
@@ -43,6 +49,8 @@ class SortControl(Thread, SortPlayground):
         self.verify_algorithm = Verify(self)
         self.verify = iter(())
 
+        self.max = 0
+
         self.reset()
 
         self.exited = False
@@ -52,6 +60,8 @@ class SortControl(Thread, SortPlayground):
     def reset(self):
         """Resets self playground and coroutines."""
         SortPlayground.reset(self)
+
+        self.max = max(self.main_array)
 
         self.sort = self.sorts[self.sort_index].run()
         self.shuffle = self.shuffles[self.shuffle_index].run()
@@ -98,11 +108,54 @@ class SortControl(Thread, SortPlayground):
             sleep(self.delay)
 
 
+class AudioControl(sounddevice.OutputStream):
+    def __init__(self, sort_control: SortControl, lowest: int, octaves: int):
+        sounddevice.OutputStream.__init__(self, channels=1, callback=self.callback)
+
+        self.sort_control = sort_control
+
+        self.lowest = lowest
+        self.octaves = octaves
+
+        self.frequencies = (440, 528, 704)
+        self.start_index = 0
+
+    def frequency(self, num: int):
+        return self.lowest * self.octaves ** (num / self.sort_control.max)
+        # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
+
+    def audify(self):
+        """Changes the current frequency played."""
+        self.frequencies = [self.frequency(num) for num in self.sort_control.read_at_pointers()]
+
+    def sine_waves(self, frames: int):
+        # frames of audio controller
+        """Returns sine_waves of all nums currently pointed at by self.sort_control
+        as added sine waves."""
+        result = (self.start_index + numpy.arange(frames)) / self.samplerate
+        result = result.reshape(-1, 1)
+
+        for frequency in self.frequencies:
+            result += numpy.sin(2 * numpy.pi * frequency * result)
+            # args.amplitude * numpy.sin(2 * numpy.pi * args.frequency * t)
+
+        return result
+
+    def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
+        """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
+        # params may need annotations... :/
+        outdata[:] = self.sine_waves(frames)
+        self.start_index += frames
+
+
 class SortApp(tkinter.Tk):
     def __init__(self, sort_control: SortControl):
         tkinter.Tk.__init__(self)
 
         self.sort_control = sort_control
+
+        self.audio_control = AudioControl(self.sort_control, 64, 1024)
+        self.audio_control.start()
 
         self.canvas = tkinter.Canvas(self, width=1024, height=512)
         self.canvas.pack()
@@ -213,6 +266,7 @@ class SortApp(tkinter.Tk):
                 return
             else:
                 self.control_speed()
+                self.audio_control.audify()
                 self.display()
                 self.update()
         # Please let me know if this code can be improved...

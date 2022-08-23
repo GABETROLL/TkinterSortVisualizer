@@ -22,6 +22,12 @@ class SortPlayground:
     def array_count(self):
         return len(self.arrays)
 
+    def read_at_pointers(self):
+        """Yields every num pointed to by self.pointers."""
+        for pointer in self.pointers:
+            yield self.arrays[pointer[0]][pointer[1]]
+    # Meant to be used as a display method.
+
     def reset(self):
         """Resets counters, deletes extra arrays and all pointers."""
         self.arrays = self.arrays[:1]
@@ -67,7 +73,7 @@ class SortPlayground:
 
     def array_iter(self, array_index: int):
         for index, num in enumerate(self.arrays[array_index]):
-            self.pointers = {index}
+            self.pointers = {(array_index, index)}
             yield num
 
     def compare(self, index_a: tuple[int, int], comparison: str, index_b: tuple[int, int]):
