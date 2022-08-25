@@ -166,7 +166,7 @@ class AudioControl(sounddevice.OutputStream):
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
         outdata[:] = self.sine_waves(frames)
-        self.start_index += frames
+        self.start_index = (self.start_index + frames) % self.samplerate
 
 
 class SortApp(tkinter.Tk):
