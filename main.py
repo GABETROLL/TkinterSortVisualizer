@@ -117,8 +117,8 @@ class AudioControl(sounddevice.OutputStream):
         self.lowest = lowest
         self.octaves = octaves
 
-        self.frequencies = (440, 528, 704)
-        self.start_index = 0
+        self.frequencies = {}
+        # frequency: start_index
 
     def frequency(self, num: int):
         return self.lowest * self.octaves ** (num / self.sort_control.max)
@@ -128,7 +128,7 @@ class AudioControl(sounddevice.OutputStream):
         """Changes the current frequency played."""
         if not self.sort_control.playing:
             self.stop()
-            self.frequencies = []
+            self.frequencies = {}
             return
         elif self.stopped:
             self.start()
@@ -139,26 +139,33 @@ class AudioControl(sounddevice.OutputStream):
         #   False    True      [...]          [...]
         #   False    True      [...]           []
 
-        new_frequencies = [self.frequency(num) for num in self.sort_control.read_at_pointers()]
-        if new_frequencies:
-            self.frequencies = new_frequencies
+        new_frequencies = {}
+        for num in self.sort_control.read_at_pointers():
+            frequency = self.frequency(num)
+
+            new_frequencies.setdefault(frequency, 0)
+            if frequency in self.frequencies:
+                new_frequencies[frequency] = self.frequencies[frequency]
+
+        self.frequencies = new_frequencies
 
     def sine_waves(self, frames: int):
         # frames of audio controller
         """Returns sine_waves of all nums currently pointed at by self.sort_control
         as added sine waves."""
-        t = (self.start_index + numpy.arange(frames)) / self.samplerate
-        t = t.reshape(-1, 1)
-
         result = None
 
-        for frequency in self.frequencies:
+        for frequency, start_index in self.frequencies.items():
+            t = (start_index + numpy.arange(frames)) / self.samplerate
+            t = t.reshape(-1, 1)
+
             wave = numpy.sin(2 * numpy.pi * frequency * t)
             if result is None:
                 result = wave
             else:
                 result += wave
-            # args.amplitude * numpy.sin(2 * numpy.pi * args.frequency * t)
+
+            self.frequencies[frequency] += frames
 
         return result
 
@@ -166,7 +173,6 @@ class AudioControl(sounddevice.OutputStream):
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
         outdata[:] = self.sine_waves(frames)
-        self.start_index = (self.start_index + frames) % self.samplerate
 
 
 class SortApp(tkinter.Tk):
