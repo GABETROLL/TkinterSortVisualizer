@@ -120,6 +120,8 @@ class AudioControl(sounddevice.OutputStream):
         self.frequencies = {}
         # frequency: start_index
 
+        self.start()
+
     def frequency(self, num: int):
         return self.lowest * self.octaves ** (num / self.sort_control.max)
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
@@ -127,11 +129,8 @@ class AudioControl(sounddevice.OutputStream):
     def audify(self):
         """Changes the current frequency played."""
         if not self.sort_control.playing:
-            self.stop()
             self.frequencies = {}
             return
-        elif self.stopped:
-            self.start()
 
         # stopped, playing, frequencies, new_frequencies:
         #   True     False      []             []
@@ -167,11 +166,16 @@ class AudioControl(sounddevice.OutputStream):
 
             self.frequencies[frequency] += frames
 
+        if result is None:
+            result = numpy.arange(frames) / self.samplerate
+            result = result.reshape(-1, 1)
+
         return result
 
     def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
+        self.audify()
         outdata[:] = self.sine_waves(frames)
 
 
@@ -292,14 +296,13 @@ class SortApp(tkinter.Tk):
                 return
             else:
                 self.control_speed()
-                self.audio_control.audify()
                 self.display()
                 self.update()
         # Please let me know if this code can be improved...
 
 
 def main():
-    core = SortControl(32, 0.002)
+    core = SortControl(256, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
