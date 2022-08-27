@@ -125,7 +125,7 @@ class AudioControl(sounddevice.OutputStream):
         self.start()
 
     def frequency(self, num: int):
-        return self.lowest * self.octaves ** (num / self.sort_control.max)
+        return self.lowest * 2 ** (self.octaves ** (num / self.sort_control.max) - 1)
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
     def sine_wave(self, start_index: int, filled_frames: int, frames: int, frequency: float):
@@ -170,7 +170,7 @@ class AudioControl(sounddevice.OutputStream):
 
     @staticmethod
     def almost_zero(x: float):
-        return -0.01 < x < 0.01
+        return -0.02 < x < 0
 
     def sine_waves(self, frames: int):
         # frames of audio controller
@@ -182,7 +182,7 @@ class AudioControl(sounddevice.OutputStream):
             wave = self.sine_wave(start_index, frames, frames, popped_frequency)
 
             for index, value in enumerate(wave):
-                if self.almost_zero(value):
+                if self.almost_zero(value) and wave[index - 1] < wave[index]:
                     wave = self.sine_wave(start_index, index, frames, popped_frequency)
 
                     self.popped_frequencies.pop(popped_frequency)
