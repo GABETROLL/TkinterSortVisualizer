@@ -168,8 +168,6 @@ class AudioControl(sounddevice.OutputStream):
                 self.frequencies.pop(popped_frequency)
         # Pop old frequencies.
 
-        print(self.popped_frequencies, self.frequencies)
-
     @staticmethod
     def almost_zero(x: float):
         return -0.01 < x < 0.01
@@ -215,6 +213,7 @@ class AudioControl(sounddevice.OutputStream):
     def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
+        self.audify()
         outdata[:] = self.sine_waves(frames)
 
 
@@ -334,7 +333,6 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
-                self.audio_control.audify()
                 self.control_speed()
                 self.display()
                 self.update()
