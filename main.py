@@ -315,6 +315,7 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
+                sleep(0.01)
                 self.audio_control.audify()
                 self.control_speed()
                 self.display()
