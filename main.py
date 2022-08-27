@@ -120,7 +120,6 @@ class AudioControl(sounddevice.OutputStream):
 
     def frequency(self, num: int):
         result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.capacity)
-        # print(f"{self.lowest} * (2 ** {self.octaves}) ** ({num} / {self.sort_control.capacity}) = {result}")
         return result
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
@@ -171,9 +170,10 @@ class AudioControl(sounddevice.OutputStream):
             wave = self.sine_wave(start_index, frames, frames, frequency)
 
             if not active:
-                for index, value in enumerate(wave):
-                    if self.almost_zero(value):
-                        wave = self.sine_wave(start_index, index, frames, frequency)
+                for frame_index in range(frames):
+                    if frame_index % (self.samplerate / frequency) == 0:
+                        # wave ended
+                        wave = self.sine_wave(start_index, frame_index, frames, frequency)
                         self.frequencies.pop(frequency)
 
                         break
@@ -323,7 +323,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(8, 0.002)
+    core = SortControl(256, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
