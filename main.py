@@ -49,8 +49,6 @@ class SortControl(Thread, SortPlayground):
         self.verify_algorithm = Verify(self)
         self.verify = iter(())
 
-        self.max = 0
-
         self.reset()
 
         self.exited = False
@@ -60,8 +58,6 @@ class SortControl(Thread, SortPlayground):
     def reset(self):
         """Resets self playground and coroutines."""
         SortPlayground.reset(self)
-
-        self.max = max(self.main_array)
 
         self.sort = self.sorts[self.sort_index].run()
         self.shuffle = self.shuffles[self.shuffle_index].run()
@@ -117,15 +113,15 @@ class AudioControl(sounddevice.OutputStream):
         self.lowest = lowest
         self.octaves = octaves
 
-        self.popped_frequencies = {}
-        # frequencies waiting for a 0 point to die
         self.frequencies = {}
-        # frequency: start_index
+        # frequency: [start_index: active]
 
         self.start()
 
     def frequency(self, num: int):
-        return self.lowest * 2 ** (self.octaves ** (num / self.sort_control.max) - 1)
+        result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.capacity)
+        # print(f"{self.lowest} * (2 ** {self.octaves}) ** ({num} / {self.sort_control.capacity}) = {result}")
+        return result
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
     def sine_wave(self, start_index: int, filled_frames: int, frames: int, frequency: float):
@@ -141,8 +137,7 @@ class AudioControl(sounddevice.OutputStream):
     def audify(self):
         """Changes the current frequency played."""
         if not self.sort_control.playing:
-            self.popped_frequencies = self.frequencies
-            self.frequencies = {}
+            self.frequencies = {f: [i, False] for (f, (i, a)) in self.frequencies.items()}
             return
 
         # stopped, playing, frequencies, new_frequencies:
@@ -155,18 +150,12 @@ class AudioControl(sounddevice.OutputStream):
 
         for frequency in self.frequencies:
             if not (frequency in new_frequencies):
-                self.popped_frequencies[frequency] = self.frequencies[frequency]
-        # Get rid of frequencies that are no longer active.
+                self.frequencies[frequency][1] = False
+        # Mark old frequencies inactive.
 
         for frequency in new_frequencies:
-            self.frequencies.setdefault(frequency, 0)
+            self.frequencies.setdefault(frequency, [0, True])
         # Add new frequencies, while preserving old frequencies' start_index.
-
-        for popped_frequency in self.popped_frequencies:
-            if popped_frequency in self.frequencies:
-                # Some waves may take longer to reach a 0 point.
-                self.frequencies.pop(popped_frequency)
-        # Pop old frequencies.
 
     @staticmethod
     def almost_zero(x: float):
@@ -178,26 +167,20 @@ class AudioControl(sounddevice.OutputStream):
         as added sine waves."""
         result = None
 
-        for popped_frequency, start_index in self.popped_frequencies.copy().items():
-            wave = self.sine_wave(start_index, frames, frames, popped_frequency)
-
-            for index, value in enumerate(wave):
-                if self.almost_zero(value) and wave[index - 1] < wave[index]:
-                    wave = self.sine_wave(start_index, index, frames, popped_frequency)
-
-                    self.popped_frequencies.pop(popped_frequency)
-                    break
-                self.popped_frequencies[popped_frequency] += 1
-
-            if result is None:
-                result = wave
-            else:
-                result += wave
-
-        for frequency, start_index in self.frequencies.items():
+        for frequency, (start_index, active) in self.frequencies.copy().items():
             wave = self.sine_wave(start_index, frames, frames, frequency)
 
-            self.frequencies[frequency] += frames
+            if not active:
+                for index, value in enumerate(wave):
+                    if self.almost_zero(value):
+                        wave = self.sine_wave(start_index, index, frames, frequency)
+                        self.frequencies.pop(frequency)
+
+                        break
+                else:
+                    self.frequencies[frequency][0] += frames
+            else:
+                self.frequencies[frequency][0] += frames
 
             if result is None:
                 result = wave
@@ -213,7 +196,6 @@ class AudioControl(sounddevice.OutputStream):
     def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
-        self.audify()
         outdata[:] = self.sine_waves(frames)
 
 
@@ -333,6 +315,7 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
+                self.audio_control.audify()
                 self.control_speed()
                 self.display()
                 self.update()
@@ -340,7 +323,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(256, 0.002)
+    core = SortControl(8, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()

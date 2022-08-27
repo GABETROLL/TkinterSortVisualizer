@@ -5,7 +5,7 @@ class SortPlayground:
     def __init__(self, capacity: int):
         self.capacity = capacity
 
-        self.arrays = [list(range(capacity))]
+        self.arrays = [list(range(1, capacity + 1))]
         self.pointers = set()
 
         self.swaps = 0

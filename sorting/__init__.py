@@ -8,7 +8,7 @@ class Random(Algorithm):
     def run(self):
         nums_len = len(self.playground.main_array)
         for index in range(nums_len):
-            self.playground.write(randint(0, nums_len - 1), (0, index))
+            self.playground.write(randint(1, nums_len), (0, index))
             yield
 
 
@@ -44,7 +44,7 @@ class AlreadySorted(Algorithm):
     """Already Sorted"""
     def run(self):
         for index in range(len(self.playground.main_array)):
-            self.playground.write(index, (0, index))
+            self.playground.write(index + 1, (0, index))
             yield
 
 
