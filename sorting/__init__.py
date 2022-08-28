@@ -25,6 +25,8 @@ class AlreadySorted(Algorithm):
 class Shuffle(AlreadySorted):
     """Linear Shuffle"""
     def run(self):
+        AlreadySorted.run(self)
+
         nums = self.playground.main_array
 
         for index in range(len(nums)):
