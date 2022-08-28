@@ -123,16 +123,6 @@ class AudioControl(sounddevice.OutputStream):
         return result
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
-    def sine_wave(self, start_index: int, filled_frames: int, frames: int, frequency: float):
-        t = numpy.zeros((frames, 1))
-
-        for t_index in range(filled_frames):
-            wave_index = t_index + start_index
-            input_index = wave_index * 2 * numpy.pi * frequency
-            t[t_index] = numpy.sin(input_index / self.samplerate)
-
-        return t
-
     def audify(self):
         """Changes the current frequency played."""
         if not self.sort_control.playing:
@@ -158,38 +148,29 @@ class AudioControl(sounddevice.OutputStream):
 
     @staticmethod
     def almost_zero(x: float):
-        return -0.02 < x < 0
+        return -0.01 < x <= 0
 
     def sine_waves(self, frames: int):
         # frames of audio controller
         """Returns sine_waves of all nums currently pointed at by self.sort_control
         as added sine waves."""
-        result = None
+        result = numpy.zeros((frames, 1))
 
         for frequency, (start_index, active) in self.frequencies.copy().items():
-            wave = self.sine_wave(start_index, frames, frames, frequency)
+            for frame_count in range(frames):
+                wave_index = start_index + frame_count
+                input_index = wave_index * 2 * numpy.pi * frequency
 
-            if not active:
-                for frame_index in range(frames):
-                    if frame_index % (self.samplerate / frequency) == 0:
-                        # wave ended
-                        wave = self.sine_wave(start_index, frame_index, frames, frequency)
-                        self.frequencies.pop(frequency)
+                previous_frame_output = numpy.sin((input_index - 1) / self.samplerate)
+                frame_output = numpy.sin(input_index / self.samplerate)
 
-                        break
-                else:
-                    self.frequencies[frequency][0] += frames
+                result[frame_count] += frame_output
+
+                if not active and self.almost_zero(frame_output) and previous_frame_output < frame_output:
+                    self.frequencies.pop(frequency)
+                    break
             else:
                 self.frequencies[frequency][0] += frames
-
-            if result is None:
-                result = wave
-            else:
-                result += wave
-
-        if result is None:
-            result = numpy.arange(frames) / self.samplerate
-            result = result.reshape(-1, 1)
 
         return result
 
@@ -324,7 +305,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(1024, 0.002)
+    core = SortControl(512, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
