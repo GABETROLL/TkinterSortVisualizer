@@ -13,7 +13,16 @@ class Random(Algorithm):
 
 
 @dataclass
-class Shuffle(Algorithm):
+class AlreadySorted(Algorithm):
+    """Already Sorted"""
+    def run(self):
+        for index in range(len(self.playground.main_array)):
+            self.playground.write(index + 1, (0, index))
+            yield
+
+
+@dataclass
+class Shuffle(AlreadySorted):
     """Linear Shuffle"""
     def run(self):
         nums = self.playground.main_array
@@ -36,15 +45,6 @@ class ManySimilar(Shuffle):
             yield
 
         for _ in Shuffle.run(self):
-            yield
-
-
-@dataclass
-class AlreadySorted(Algorithm):
-    """Already Sorted"""
-    def run(self):
-        for index in range(len(self.playground.main_array)):
-            self.playground.write(index + 1, (0, index))
             yield
 
 

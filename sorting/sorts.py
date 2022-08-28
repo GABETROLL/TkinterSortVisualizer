@@ -1,5 +1,5 @@
 from sorting.algorithm import *
-from itertools import count
+from itertools import count, chain
 
 
 @dataclass
@@ -578,5 +578,46 @@ class GravitySort(Algorithm):
                 yield
 
 
+class BatchersBitonicSort(Algorithm):
+    """Batcher's Bitonic Sort"""
+    def merge(self, start: int, section_len: int, direction: bool):
+        # Direction is True if going up, False if going down.
+
+        if section_len < 1:
+            return
+
+        comparison = ">" if direction else "<"
+
+        half_len = section_len // 2
+
+        mid_point = start + half_len
+
+        for left_index, right_index in zip(range(start, mid_point), range(mid_point, start + section_len)):
+            should_swap = self.playground.compare((0, left_index), comparison, (0, right_index))
+            yield
+
+            if should_swap:
+                self.playground.swap((0, left_index), (0, right_index))
+                yield
+
+        for _ in chain(self.merge(start, half_len, direction), self.merge(start + half_len, half_len, direction)):
+            yield
+
+    def bitonic(self, start: int, section_len: int, direction: bool):
+        if section_len < 1:
+            return
+
+        half_len = section_len // 2
+
+        for _ in chain(self.bitonic(start, half_len, True), self.bitonic(start + half_len, half_len, False),
+                       self.merge(start, section_len, direction)):
+            yield
+
+    def run(self):
+        for _ in self.bitonic(0, len(self.playground.main_array), True):
+            yield
+
+
 sorts = [BubbleSort, OptimizedBubbleSort, InsertionSort, SelectionSort, MaxHeapSort, MinHeapSort, QuickSort, MergeSort,
-         MergeSortInPlace, RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort]
+         MergeSortInPlace, RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
+         BatchersBitonicSort]
