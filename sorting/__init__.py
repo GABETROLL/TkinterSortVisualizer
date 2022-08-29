@@ -23,7 +23,7 @@ class AlreadySorted(Algorithm):
 
 @dataclass
 class LinearShuffle(AlreadySorted):
-    """Linear LinearShuffle"""
+    """LinearShuffle"""
     def run(self):
         for _ in AlreadySorted.run(self):
             yield
