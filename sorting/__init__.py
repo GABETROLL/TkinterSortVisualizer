@@ -22,10 +22,11 @@ class AlreadySorted(Algorithm):
 
 
 @dataclass
-class Shuffle(AlreadySorted):
-    """Linear Shuffle"""
+class LinearShuffle(AlreadySorted):
+    """Linear LinearShuffle"""
     def run(self):
-        AlreadySorted.run(self)
+        for _ in AlreadySorted.run(self):
+            yield
 
         nums = self.playground.main_array
 
@@ -35,7 +36,7 @@ class Shuffle(AlreadySorted):
 
 
 @dataclass
-class ManySimilar(Shuffle):
+class ManySimilar(LinearShuffle):
     """Many Similar"""
     div: int = 16
 
@@ -46,7 +47,7 @@ class ManySimilar(Shuffle):
             self.playground.write(num, (0, index))
             yield
 
-        for _ in Shuffle.run(self):
+        for _ in LinearShuffle.run(self):
             yield
 
 
@@ -60,7 +61,7 @@ class Reversed(AlreadySorted):
             yield
 
 
-shuffles = [Random, Shuffle, ManySimilar, Reversed, AlreadySorted]
+shuffles = [Random, LinearShuffle, ManySimilar, Reversed, AlreadySorted]
 
 
 class Verify(Algorithm):
