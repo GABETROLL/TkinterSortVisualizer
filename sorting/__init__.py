@@ -1,5 +1,6 @@
 from sorting.sorts import *
 from random import randint
+from math import sin, pi
 
 
 @dataclass
@@ -23,7 +24,7 @@ class AlreadySorted(Algorithm):
 
 @dataclass
 class LinearShuffle(AlreadySorted):
-    """LinearShuffle"""
+    """Linear Shuffle"""
     def run(self):
         for _ in AlreadySorted.run(self):
             yield
@@ -61,7 +62,28 @@ class Reversed(AlreadySorted):
             yield
 
 
-shuffles = [Random, LinearShuffle, ManySimilar, Reversed, AlreadySorted]
+@dataclass
+class SineWave(Algorithm):
+    """Sine Wave"""
+    def run(self):
+        nums_len = len(self.playground.main_array)
+        shrink_factor = 2 * pi / nums_len
+        # input goes from [0, num_len) to [0, 2 * pi)
+
+        for index in range(nums_len):
+            num = sin(shrink_factor * index)
+            num += 1
+            # push sine wave up from (-1, 1) to (0, 2)
+            num *= nums_len / 2
+            # scale up to (0, nums_len)
+            num = int(num)
+            # round
+
+            self.playground.write(num, (0, index))
+            yield
+
+
+shuffles = [Random, LinearShuffle, ManySimilar, Reversed, AlreadySorted, SineWave]
 
 
 class Verify(Algorithm):
