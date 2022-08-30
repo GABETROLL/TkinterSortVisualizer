@@ -156,7 +156,7 @@ class AudioControl(sounddevice.OutputStream):
                 wave_index = start_index + frame_count
                 input_index = wave_index * 2 * numpy.pi * frequency / self.samplerate
 
-                amplitude = (self.duration - wave_index) / self.duration
+                amplitude = (self.duration - wav_index) / self.duration
                 #     print(f"wave {frequency}: ({self.duration} - {wave_index}) / {self.duration} -> {amplitude}")
                 # each note fades out
 
@@ -293,7 +293,7 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
-                sleep(0.1)
+                sleep(0.05)
                 self.control_speed()
                 self.display()
                 self.update()

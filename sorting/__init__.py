@@ -14,8 +14,8 @@ class Random(Algorithm):
 
 
 @dataclass
-class AlreadySorted(Algorithm):
-    """Already Sorted"""
+class Linear(Algorithm):
+    """Linear"""
     def run(self):
         for index in range(len(self.playground.main_array)):
             self.playground.write(index + 1, (0, index))
@@ -23,16 +23,21 @@ class AlreadySorted(Algorithm):
 
 
 @dataclass
-class LinearShuffle(AlreadySorted):
-    """Linear Shuffle"""
+class Shuffle(Algorithm):
+    """Shuffle"""
     def run(self):
-        for _ in AlreadySorted.run(self):
-            yield
-
         nums = self.playground.main_array
 
         for index in range(len(nums)):
             self.playground.swap((0, index), (0, randint(index, len(nums) - 1)))
+            yield
+
+
+@dataclass
+class LinearShuffle(Linear, Shuffle):
+    """Shuffled Linear"""
+    def run(self):
+        for _ in chain(Linear.run(self), Shuffle.run(self)):
             yield
 
 
@@ -53,12 +58,33 @@ class ManySimilar(LinearShuffle):
 
 
 @dataclass
-class Reversed(AlreadySorted):
+class Reversed(Linear):
     """Reversed Linear"""
     def run(self):
-        for _ in AlreadySorted.run(self):
+        for _ in Linear.run(self):
             yield
-        for _ in AlreadySorted.reversal(self, 0):
+        for _ in Linear.reversal(self, 0):
+            yield
+
+
+@dataclass
+class Quadratic(Algorithm):
+    """Quadratic"""
+    def run(self):
+        half_len = self.playground.capacity // 2
+        shrink_factor = half_len ** 2 / self.playground.capacity
+        for index in range(self.playground.capacity):
+            input_index = index - half_len
+            output = int((input_index + 1) ** 2 / shrink_factor)
+            self.playground.write(output, (0, index))
+            yield
+
+
+@dataclass
+class ShuffledQuadratic(Quadratic, Shuffle):
+    """Shuffled Quadratic"""
+    def run(self):
+        for _ in chain(Quadratic.run(self), Shuffle.run(self)):
             yield
 
 
@@ -83,7 +109,7 @@ class SineWave(Algorithm):
             yield
 
 
-shuffles = [Random, LinearShuffle, ManySimilar, Reversed, AlreadySorted, SineWave]
+shuffles = [Random, LinearShuffle, ManySimilar, Reversed, Linear, Quadratic, ShuffledQuadratic, SineWave]
 
 
 class Verify(Algorithm):
