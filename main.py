@@ -114,9 +114,14 @@ class AudioControl(sounddevice.OutputStream):
         self.octaves = octaves
 
         self.frequencies = {}
-        # frequency: [start_index: active]
+        # frequency: start_index
 
         self.start()
+
+    @property
+    def duration(self):
+        """Duration of each note in frames."""
+        return int(self.sort_control.delay * self.samplerate)
 
     def frequency(self, num: int):
         result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.capacity)
@@ -126,7 +131,7 @@ class AudioControl(sounddevice.OutputStream):
     def audify(self):
         """Changes the current frequency played."""
         if not self.sort_control.playing:
-            self.frequencies = {f: [i, False] for (f, (i, a)) in self.frequencies.items()}
+            self.frequencies = {}
             return
 
         # stopped, playing, frequencies, new_frequencies:
@@ -135,20 +140,10 @@ class AudioControl(sounddevice.OutputStream):
         #   False    True      [...]          [...]
         #   False    True      [...]           []
 
-        new_frequencies = {self.frequency(num) for num in self.sort_control.read_at_pointers()}
+        for num in self.sort_control.read_at_pointers():
+            frequency = self.frequency(num)
 
-        for frequency in self.frequencies:
-            if not (frequency in new_frequencies):
-                self.frequencies[frequency][1] = False
-        # Mark old frequencies inactive.
-
-        for frequency in new_frequencies:
-            self.frequencies.setdefault(frequency, [0, True])
-        # Add new frequencies, while preserving old frequencies' start_index.
-
-    @staticmethod
-    def almost_zero(x: float):
-        return -0.01 < x <= 0
+            self.frequencies.setdefault(frequency, 0)
 
     def sine_waves(self, frames: int):
         # frames of audio controller
@@ -156,27 +151,29 @@ class AudioControl(sounddevice.OutputStream):
         as added sine waves."""
         result = numpy.zeros((frames, 1))
 
-        for frequency, (start_index, active) in self.frequencies.copy().items():
+        for frequency, start_index in self.frequencies.copy().items():
             for frame_count in range(frames):
                 wave_index = start_index + frame_count
-                input_index = wave_index * 2 * numpy.pi * frequency
+                input_index = wave_index * 2 * numpy.pi * frequency / self.samplerate
 
-                previous_frame_output = numpy.sin((input_index - 1) / self.samplerate)
-                frame_output = numpy.sin(input_index / self.samplerate)
+                amplitude = (self.duration - wave_index) / self.duration
+                #     print(f"wave {frequency}: ({self.duration} - {wave_index}) / {self.duration} -> {amplitude}")
+                # each note fades out
 
-                result[frame_count] += frame_output
+                result[frame_count] += amplitude * numpy.sin(input_index)
 
-                if not active and self.almost_zero(frame_output) and previous_frame_output < frame_output:
+                if amplitude <= 0:
                     self.frequencies.pop(frequency)
                     break
             else:
-                self.frequencies[frequency][0] += frames
+                self.frequencies[frequency] += frames
 
         return result
 
     def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
+        self.audify()
         outdata[:] = self.sine_waves(frames)
 
 
@@ -296,8 +293,7 @@ class SortApp(tkinter.Tk):
             except tkinter.TclError:
                 return
             else:
-                sleep(0.01)
-                self.audio_control.audify()
+                sleep(0.1)
                 self.control_speed()
                 self.display()
                 self.update()
@@ -305,7 +301,7 @@ class SortApp(tkinter.Tk):
 
 
 def main():
-    core = SortControl(512, 0.002)
+    core = SortControl(256, 0.002)
     front_end = SortApp(core)
     core.start()
     front_end.mainloop()
