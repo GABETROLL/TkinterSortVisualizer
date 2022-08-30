@@ -53,7 +53,7 @@ class ManySimilar(Shuffle):
             self.playground.write(num, (0, index))
             yield
 
-        for _ in LinearShuffle.run(self):
+        for _ in Shuffle.run(self):
             yield
 
 
