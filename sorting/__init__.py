@@ -42,7 +42,7 @@ class LinearShuffle(Linear, Shuffle):
 
 
 @dataclass
-class ManySimilar(LinearShuffle):
+class ManySimilar(Shuffle):
     """Many Similar"""
     div: int = 16
 
