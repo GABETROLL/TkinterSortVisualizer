@@ -119,9 +119,19 @@ class AudioControl(sounddevice.OutputStream):
         self.start()
 
     @property
+    def minimum_duration(self):
+        """Shortest wave has to be long enough to
+        be audible as an individual note."""
+        return 383 * 2
+
+    @property
     def duration(self):
         """Duration of each note in frames."""
-        return int(self.sort_control.delay * self.samplerate)
+        # 1 -> self.sample_rate
+        # 0 -> self.minimum_duration
+        # Length of note decreases linearly: max is one second (self.samplerate samples)
+        # and min is self.minimum_duration.
+        return (self.samplerate - self.minimum_duration) * self.sort_control.delay + self.minimum_duration
 
     def frequency(self, num: int):
         result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.capacity)
