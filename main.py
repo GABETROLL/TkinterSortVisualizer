@@ -122,7 +122,8 @@ class AudioControl(sounddevice.OutputStream):
     def minimum_duration(self):
         """Shortest wave has to be long enough to
         be audible as an individual note."""
-        return 383 * 2
+        return 383 * 4
+    # going past 8 gives an underrun...
 
     @property
     def duration(self):
