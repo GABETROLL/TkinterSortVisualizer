@@ -168,8 +168,9 @@ class AudioControl(sounddevice.OutputStream):
                 input_index = wave_index * 2 * numpy.pi * frequency / self.samplerate
 
                 amplitude = (self.duration - wave_index) / self.duration
-                #     print(f"wave {frequency}: ({self.duration} - {wave_index}) / {self.duration} -> {amplitude}")
                 # each note fades out
+                amplitude /= len(self.frequencies)
+                # normalize
 
                 result[frame_count] += amplitude * numpy.sin(input_index)
 
