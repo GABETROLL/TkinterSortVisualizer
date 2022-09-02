@@ -2,7 +2,6 @@ from sorting.algorithm import *
 from itertools import count, chain
 
 
-@dataclass
 class BubbleSort(Algorithm):
     """Bubble Sort"""
     def run(self):
@@ -18,7 +17,6 @@ class BubbleSort(Algorithm):
                     yield
 
 
-@dataclass
 class OptimizedBubbleSort(BubbleSort):
     """Optimized Bubble Sort"""
     def run(self):
@@ -34,7 +32,6 @@ class OptimizedBubbleSort(BubbleSort):
                     yield
 
 
-@dataclass
 class InsertionSort(Algorithm):
     """Insertion Sort"""
     def run(self):
@@ -50,14 +47,12 @@ class InsertionSort(Algorithm):
                 index -= 1
 
 
-@dataclass
 class BinaryInsertionSort(InsertionSort):
     """Insertion Sort (Binary Search)"""
     def run(self):
         pass
 
 
-@dataclass
 class SelectionSort(Algorithm):
     """Selection Sort"""
     def run(self):
@@ -74,14 +69,12 @@ class SelectionSort(Algorithm):
             yield
 
 
-@dataclass
 class DoubleSelectionSort(SelectionSort):
     """Double Selection Sort"""
     def run(self):
         pass
 
 
-@dataclass
 class HeapSort(Algorithm):
     """Heap Sort"""
     def _run(self, mode="min"):
@@ -153,7 +146,6 @@ class HeapSort(Algorithm):
         raise NotImplementedError("HeapSort is abstract.")
 
 
-@dataclass
 class MaxHeapSort(HeapSort):
     """Max Heap Sort"""
     def run(self):
@@ -161,7 +153,6 @@ class MaxHeapSort(HeapSort):
             yield
 
 
-@dataclass
 class MinHeapSort(HeapSort):
     """Min Heap Sort"""
     def run(self):
@@ -169,7 +160,6 @@ class MinHeapSort(HeapSort):
             yield
 
 
-@dataclass
 class QuickSort(Algorithm):
     """Quick Sort"""
     def quick_sort(self, start=0, end=0):
@@ -233,7 +223,6 @@ class QuickSort(Algorithm):
             yield
 
 
-@dataclass
 class MergeSort(Algorithm):
     """Merge Sort"""
     def out_of_place(self, start=0, end=0):
@@ -300,7 +289,6 @@ class MergeSort(Algorithm):
         yield
 
 
-@dataclass
 class MergeSortInPlace(MergeSort):
     """Merge Sort (In-place: Insertion Sort)"""
     def in_place(self, start, end):
@@ -341,7 +329,6 @@ class RadixSort(Algorithm):
         raise NotImplementedError
 
 
-@dataclass
 class RadixLSDSort(RadixSort):
     """Radix LSD Sort"""
     def lsd_digit(self, num: int, place: int):
@@ -456,7 +443,6 @@ class RadixMSDSort(RadixSort):
         pass
 
 
-@dataclass
 class PigeonholeSort(Algorithm):
     """Pigeonhole Sort"""
     def run(self):
@@ -492,7 +478,6 @@ class PigeonholeSort(Algorithm):
         yield
 
 
-@dataclass
 class CountSort(Algorithm):
     """Count Sort"""
     def run(self):
@@ -541,7 +526,6 @@ class CountSort(Algorithm):
         yield
 
 
-@dataclass
 class GravitySort(Algorithm):
     """Gravity Sort"""
     def run(self):
