@@ -244,11 +244,9 @@ class SortApp(tkinter.Tk):
 
         for array_index, array in enumerate(self.sort_control.arrays):
 
-            biggest = max(array)
-
             for num_index, num in enumerate(array):
                 try:
-                    height = max_height * num / biggest
+                    height = max_height * num / self.sort_control.capacity
                 except ZeroDivisionError:
                     height = 0
 
@@ -257,7 +255,8 @@ class SortApp(tkinter.Tk):
 
                 y0 = max_height * array_index
 
-                color = "black" if (array_index, num_index) in self.sort_control.pointers else rainbow_color(num, biggest)
+                color = "black" if (array_index, num_index) in self.sort_control.pointers else \
+                    rainbow_color(num, self.sort_control.capacity)
 
                 self.canvas.create_rectangle(x0,
                                              y0,
