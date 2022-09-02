@@ -39,6 +39,11 @@ class SortPlayground:
         self.writes = 0
         self.reversals = 0
 
+    def change_capacity(self, new_capacity: int):
+        self.capacity = new_capacity
+        self.arrays[0] = list(range(new_capacity))
+        self.reset()
+
     def spawn_new_array(self, size: int):
         self.arrays.append([0 for _ in range(size)])
 

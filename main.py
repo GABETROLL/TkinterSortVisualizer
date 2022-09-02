@@ -202,10 +202,11 @@ class SortApp(tkinter.Tk):
         self.play = tkinter.Button(self, text=self.play_text, command=self.sort_control.pause_play)
         self.play.pack()
 
-        self.sorts_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.exit_settings)
-        self.sorts_button.pack()
+        self.settings_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.goto_settings)
+        self.settings_button.pack()
         self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
         self.shuffle_variable = tkinter.StringVar(self, "Random")
+        self.size_variable = tkinter.IntVar(self, self.sort_control.capacity)
         self.choosing_sort = False
 
         self.min_delay = 0
@@ -269,7 +270,7 @@ class SortApp(tkinter.Tk):
         for child in self.winfo_children():
             child.pack_forget()
 
-    def goto_settings(self):
+    def exit_settings(self):
         self.clear_screen()
         self.choosing_sort = False
 
@@ -279,12 +280,14 @@ class SortApp(tkinter.Tk):
         shuffle_name = self.shuffle_variable.get()
         self.sort_control.choose_shuffle(shuffle_name)
 
+        self.sort_control.change_capacity(self.size_variable.get())
+
         self.canvas.pack()
         self.play.pack()
         self.speed_control.pack()
-        self.sorts_button.pack()
+        self.settings_button.pack()
 
-    def exit_settings(self):
+    def goto_settings(self):
         self.clear_screen()
 
         self.choosing_sort = True
@@ -295,7 +298,9 @@ class SortApp(tkinter.Tk):
         shuffle_names = (shuffle.__doc__ for shuffle in shuffles)
         tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
 
-        tkinter.Button(self, text="OK", command=self.goto_settings).pack()
+        tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable).pack()
+
+        tkinter.Button(self, text="OK", command=self.exit_settings).pack()
 
     def mainloop(self, n: int = ...) -> None:
         while True:
