@@ -3,7 +3,6 @@ from random import randint
 from math import sin, pi
 
 
-@dataclass
 class Random(Algorithm):
     """Random"""
     def run(self):
@@ -13,7 +12,6 @@ class Random(Algorithm):
             yield
 
 
-@dataclass
 class Linear(Algorithm):
     """Linear"""
     def run(self):
@@ -22,7 +20,6 @@ class Linear(Algorithm):
             yield
 
 
-@dataclass
 class Shuffle(Algorithm):
     """Shuffle"""
     def run(self):
@@ -33,7 +30,6 @@ class Shuffle(Algorithm):
             yield
 
 
-@dataclass
 class LinearShuffle(Linear, Shuffle):
     """Shuffled Linear"""
     def run(self):
@@ -57,7 +53,6 @@ class ManySimilar(Shuffle):
             yield
 
 
-@dataclass
 class Reversed(Linear):
     """Reversed Linear"""
     def run(self):
@@ -67,7 +62,21 @@ class Reversed(Linear):
             yield
 
 
-@dataclass
+class FinalRadixPass(Linear):
+    """Final Radix Pass"""
+    def run(self):
+        half_nums_len = self.playground.capacity // 2
+
+        for index in range(half_nums_len):
+            even_num = index
+            odd_num = index + half_nums_len
+
+            self.playground.write(even_num, (0, index * 2))
+            yield
+            self.playground.write(odd_num, (0, index * 2 + 1))
+            yield
+
+
 class Quadratic(Algorithm):
     """Quadratic"""
     def run(self):
@@ -80,7 +89,6 @@ class Quadratic(Algorithm):
             yield
 
 
-@dataclass
 class ShuffledQuadratic(Quadratic, Shuffle):
     """Shuffled Quadratic"""
     def run(self):
@@ -88,7 +96,6 @@ class ShuffledQuadratic(Quadratic, Shuffle):
             yield
 
 
-@dataclass
 class SineWave(Algorithm):
     """Sine Wave"""
     def run(self):
@@ -109,7 +116,8 @@ class SineWave(Algorithm):
             yield
 
 
-shuffles = [Random, LinearShuffle, ManySimilar, Reversed, Linear, Quadratic, ShuffledQuadratic, SineWave]
+shuffles = [Random, LinearShuffle, ManySimilar, Reversed, Linear, FinalRadixPass,
+            Quadratic, ShuffledQuadratic, SineWave]
 
 
 class Verify(Algorithm):
