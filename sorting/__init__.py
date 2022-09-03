@@ -71,9 +71,9 @@ class FinalRadixPass(Linear):
             even_num = index
             odd_num = index + half_nums_len
 
-            self.playground.write(even_num, (0, index * 2))
+            self.playground.write(even_num + 1, (0, index * 2))
             yield
-            self.playground.write(odd_num, (0, index * 2 + 1))
+            self.playground.write(odd_num + 1, (0, index * 2 + 1))
             yield
 
 
