@@ -562,7 +562,13 @@ class GravitySort(Algorithm):
                 yield
 
 
-class BatchersBitonicSort(Algorithm):
+class Concurrent(Algorithm):
+    """Concurrent Sorts"""
+    def run(self):
+        raise NotImplementedError
+
+
+class BatchersBitonicSort(Concurrent):
     """Batcher's Bitonic Sort"""
     def merge(self, start: int, section_len: int, direction: bool):
         # Direction is True if going up, False if going down.
@@ -602,6 +608,59 @@ class BatchersBitonicSort(Algorithm):
             yield
 
 
+class PairwiseSortingNetwork(Concurrent):
+    """Pairwise Sorting Network"""
+
+    def merge(self, start: int, amount: int, step: int):
+        """Merges sub-lists of n amount every step items using binary search,
+        Assumes 'step' parameter is a power of 2."""
+        if amount < 2:
+            return
+
+        section_end = start + amount * step
+
+        for index in range(start, section_end, step):
+
+            binary_search_index = index
+            power = step
+            while binary_search_index < section_end:
+                binary_search_index += power
+                power *= 2
+            power //= 2
+            binary_search_index -= power
+            # There's gotta be an easier way...
+
+            while binary_search_index > index:
+
+                if binary_search_index != index:
+                    should_swap = self.playground.compare((0, binary_search_index), "<", (0, index))
+                    yield
+
+                    if should_swap:
+                        self.playground.swap((0, index), (0, binary_search_index))
+                        yield
+
+                power //= 2
+                binary_search_index -= power
+            # Using binary search but starting at step;
+            # swap value at current index with a smaller value,
+            # if found at the binary search indexes.
+
+    def sorting_network(self, start: int, amount: int, step: int):
+        if amount < 2:
+            return
+
+        for _ in chain(self.sorting_network(start, amount // 2, step * 2),
+                       self.sorting_network(start + step, amount // 2, step * 2),
+                       self.merge(start, amount, step)):
+            yield
+
+    def run(self):
+        """Assumes list's length is a power of 2."""
+        for _ in self.sorting_network(0, len(self.playground.main_array), 1):
+            yield
+
+
 sorts = [BubbleSort, OptimizedBubbleSort, InsertionSort, SelectionSort, MaxHeapSort, MinHeapSort, QuickSort, MergeSort,
          MergeSortInPlace, RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort]
+         BatchersBitonicSort, PairwiseSortingNetwork]
