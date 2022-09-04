@@ -105,12 +105,14 @@ class SortControl(Thread, SortPlayground):
 
 
 class AudioControl(sounddevice.OutputStream):
-    def __init__(self, sort_control: SortControl, lowest: int, octaves: int):
-        sounddevice.OutputStream.__init__(self, channels=1, callback=self.callback)
+    def __init__(self, sort_control: SortControl, octaves: int):
+        self.lowest = 210
+        sounddevice.OutputStream.__init__(self, blocksize=self.lowest, channels=1, callback=self.callback)
+        # 210 divides 44100 evenly.
+        # Should also match the harmonics of the lowest note.
 
         self.sort_control = sort_control
 
-        self.lowest = lowest
         self.octaves = octaves
 
         self.frequencies = {}
@@ -122,7 +124,7 @@ class AudioControl(sounddevice.OutputStream):
     def minimum_duration(self):
         """Shortest wave has to be long enough to
         be audible as an individual note."""
-        return 383 * 2
+        return self.blocksize * 2
     # going past 8 gives an underrun...
 
     @property
@@ -193,7 +195,7 @@ class SortApp(tkinter.Tk):
 
         self.sort_control = sort_control
 
-        self.audio_control = AudioControl(self.sort_control, 128, 4)
+        self.audio_control = AudioControl(self.sort_control, 4)
 
         self.canvas = tkinter.Canvas(self, width=1024, height=512)
         self.canvas.pack()
