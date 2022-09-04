@@ -55,7 +55,21 @@ class Heapify(Algorithm):
         raise NotImplementedError
 
 
-algorithms = [Shuffle, Reversal, Heapify] + inputs
+class MaxHeap(Heapify):
+    """Max Heap"""
+    def run(self):
+        for _ in self.heapify("max"):
+            yield
+
+
+class MinHeap(Heapify):
+    """Min Heap"""
+    def run(self):
+        for _ in self.heapify("min"):
+            yield
+
+
+algorithms = [Shuffle, Reversal, MaxHeap, MinHeap] + inputs
 
 
 @dataclass
