@@ -1,5 +1,5 @@
 class SortPlayground:
-    """Playground for sorting made of sorting arrays.
+    """Playground for algorithms made of arrays.
     Counts swaps, comparisons, writes and reversals."""
 
     def __init__(self, capacity: int):

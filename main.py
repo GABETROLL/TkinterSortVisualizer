@@ -5,7 +5,7 @@ import numpy
 from threading import Thread
 from time import sleep
 # for core
-from sorting import *
+from algorithms import *
 from itertools import chain
 # for controlling core
 from colorsys import hsv_to_rgb
@@ -42,7 +42,7 @@ class SortControl(Thread, SortPlayground):
         self.sort_index = 0
         self.sort = iter(())
 
-        self.shuffles = [shuffle(self) for shuffle in shuffles]
+        self.shuffles = [shuffle(self) for shuffle in algorithms]
         self.shuffle_index = 0
         self.shuffle = iter(())
 
@@ -295,7 +295,7 @@ class SortApp(tkinter.Tk):
         sort_names = (sort.__doc__ for sort in sorts)
         tkinter.OptionMenu(self, self.sort_variable, self.sort_variable.get(), *sort_names).pack()
 
-        shuffle_names = (shuffle.__doc__ for shuffle in shuffles)
+        shuffle_names = (shuffle.__doc__ for shuffle in algorithms)
         tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
 
         tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable).pack()

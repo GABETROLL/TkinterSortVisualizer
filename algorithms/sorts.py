@@ -1,4 +1,4 @@
-from sorting.algorithm import *
+from algorithms.algorithms import *
 from itertools import count, chain
 
 
@@ -75,32 +75,15 @@ class DoubleSelectionSort(SelectionSort):
         pass
 
 
-class HeapSort(Algorithm):
+class HeapSort(Algorithm, Reversal):
     """Heap Sort"""
-    def _run(self, mode="min"):
-        # Heapify.
-        if mode == "min":
-            comparison = ">"
-        elif mode == "max":
+    def sort(self, mode="min"):
+        if mode == "max":
             comparison = "<"
+        elif mode == "min":
+            comparison = ">"
         else:
-            raise ValueError("Invalid HeapSort mode.")
-
-        for index in range(1, len(self.playground.main_array)):
-
-            while 0 < index:
-                parent_index = (index - 1) >> 1
-
-                should_bubble = self.playground.compare((0, parent_index), comparison, (0, index))
-                yield
-
-                if should_bubble:
-                    self.playground.swap((0, parent_index), (0, index))
-                    yield
-                else:
-                    break
-
-                index = parent_index
+            raise ValueError("Invalid Heap Sort mode.")
 
         # Once heap is done:
         for sorted_index in range(len(self.playground.main_array) - 1, -1, -1):
@@ -139,24 +122,24 @@ class HeapSort(Algorithm):
                     # Done bubbling.
 
         if mode == "min":
-            for _ in self.reversal(0):
+            for _ in self.reverse_array(0):
                 yield
 
     def run(self):
-        raise NotImplementedError("HeapSort is abstract.")
+        raise NotImplementedError
 
 
-class MaxHeapSort(HeapSort):
+class MaxHeapSort(Heapify, HeapSort):
     """Max Heap Sort"""
     def run(self):
-        for _ in self._run("max"):
+        for _ in chain(self.heapify("max"), self.sort("max")):
             yield
 
 
-class MinHeapSort(HeapSort):
+class MinHeapSort(Heapify, HeapSort):
     """Min Heap Sort"""
     def run(self):
-        for _ in self._run("min"):
+        for _ in chain(self.heapify("min"), self.sort("min")):
             yield
 
 
@@ -661,6 +644,20 @@ class PairwiseSortingNetwork(Concurrent):
             yield
 
 
+class BogoSort(Verify, Shuffle):
+    """Bogo Sort"""
+    def run(self):
+        while True:
+            for _ in Verify.run(self):
+                yield
+
+            if self.sorted:
+                break
+
+            for _ in Shuffle.run(self):
+                yield
+
+
 sorts = [BubbleSort, OptimizedBubbleSort, InsertionSort, SelectionSort, MaxHeapSort, MinHeapSort, QuickSort, MergeSort,
          MergeSortInPlace, RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort, PairwiseSortingNetwork]
+         BatchersBitonicSort, PairwiseSortingNetwork, BogoSort]
