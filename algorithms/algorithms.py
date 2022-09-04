@@ -55,7 +55,7 @@ class Heapify(Algorithm):
         raise NotImplementedError
 
 
-algorithms = [Shuffle, Reversal, Heapify]
+algorithms = [Shuffle, Reversal, Heapify] + inputs
 
 
 @dataclass

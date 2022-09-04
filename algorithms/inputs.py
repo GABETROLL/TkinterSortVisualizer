@@ -1,4 +1,4 @@
-from algorithm import Algorithm
+from algorithms.algorithm import Algorithm
 from dataclasses import dataclass
 from random import randint
 from math import sin, pi

@@ -75,7 +75,7 @@ class DoubleSelectionSort(SelectionSort):
         pass
 
 
-class HeapSort(Algorithm, Reversal):
+class HeapSort(Reversal):
     """Heap Sort"""
     def sort(self, mode="min"):
         if mode == "max":
@@ -650,6 +650,8 @@ class BogoSort(Verify, Shuffle):
         while True:
             for _ in Verify.run(self):
                 yield
+
+            print(self.sorted)
 
             if self.sorted:
                 break

@@ -209,6 +209,7 @@ class SortApp(tkinter.Tk):
         self.shuffle_variable = tkinter.StringVar(self, "Random")
         self.size_variable = tkinter.IntVar(self, self.sort_control.capacity)
         self.choosing_sort = False
+        # PLEASE ALLOW USER TO SCRAMBLE FREELY BY COMBINING SHUFFLES AND INPUTS.
 
         self.min_delay = 0
         self.max_delay = 1
