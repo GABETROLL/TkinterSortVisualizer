@@ -1,6 +1,12 @@
 from algorithms.inputs import *
 
 
+class Nothing(Algorithm):
+    """Nothing"""
+    def run(self):
+        yield
+
+
 class Shuffle(Algorithm):
     """Shuffle"""
     def run(self):
@@ -69,7 +75,8 @@ class MinHeap(Heapify):
             yield
 
 
-algorithms = [Shuffle, Reversal, MaxHeap, MinHeap] + inputs
+shuffles = [Nothing, Shuffle, Reversal, MaxHeap, MinHeap]
+algorithms = shuffles + inputs
 
 
 @dataclass

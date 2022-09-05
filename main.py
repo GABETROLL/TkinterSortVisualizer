@@ -38,34 +38,36 @@ class SortControl(Thread, SortPlayground):
 
         self.delay = delay
 
-        self.sorts = [sort(self) for sort in sorts]
-        self.sort_index = 0
-        self.sort = iter(())
-
-        self.shuffles = [shuffle(self) for shuffle in algorithms]
-        self.shuffle_index = 0
-        self.shuffle = iter(())
-
+        self.sorts = {c.__doc__: c(self) for c in sorts}
+        self.sort_name = "Bubble Sort"
+        self.inputs = {c.__doc__: c(self) for c in inputs}
+        self.input_name = "Random Input"
+        self.shuffles = {c.__doc__: c(self) for c in shuffles}
+        self.shuffle_name = "Nothing"
         self.verify_algorithm = Verify(self)
-        self.verify = iter(())
+        # Settings chosen by UI.
 
+        self.chosen_algorithms = iter(())
+        # chain of all chosen algorithms
         self.reset()
+        # define chain
 
         self.exited = False
         self.playing = False
         # data
 
     def reset(self):
-        """Resets self playground and coroutines."""
+        """Resets self.chosen_algorithms and resets self as SortPlayground."""
+        self.chosen_algorithms = chain(self.inputs[self.input_name].run(),
+                                       self.shuffles[self.shuffle_name].run(),
+                                       self.sorts[self.sort_name].run(),
+                                       self.verify_algorithm.run())
         SortPlayground.reset(self)
-
-        self.sort = self.sorts[self.sort_index].run()
-        self.shuffle = self.shuffles[self.shuffle_index].run()
-        self.verify = self.verify_algorithm.run()
 
     def stop(self):
         self.playing = False
         self.reset()
+        # To refresh coroutines when they end.
 
     def pause_play(self):
         self.playing = not self.playing
@@ -73,38 +75,47 @@ class SortControl(Thread, SortPlayground):
     def change_delay(self, s: float):
         self.delay = s
 
-    def _choose_algorithm(self, sort: bool, name: str):
-        for index, algorithm in enumerate(self.sorts if sort else self.shuffles):
-            if algorithm.__doc__ == name:
-                if sort:
-                    self.sort_index = index
-                else:
-                    self.shuffle_index = index
+    def choose_input(self, name: str):
+        if not (name in self.inputs):
+            raise KeyError(f"Input '{name}' doesn't exist.")
+        self.input_name = name
 
         self.stop()
+        # restart
 
     def choose_shuffle(self, name: str):
-        self._choose_algorithm(False, name)
+        if not (name in self.shuffles):
+            raise KeyError(f"Shuffle '{name}' doesn't exist.")
+        self.shuffle_name = name
+
+        self.stop()
+        # restart
 
     def choose_sort(self, name: str):
-        self._choose_algorithm(True, name)
+        if not (name in self.sorts):
+            raise KeyError(f"Sort '{name}' doesn't exist.")
+        self.sort_name = name
+
+        self.stop()
+        # restart
 
     def exit(self):
         self.exited = True
 
     def run(self):
         while not self.exited:
-            algorithms = chain(self.shuffle, self.sort, self.verify)
 
             if self.playing:
                 try:
-                    next(algorithms)
+                    next(self.chosen_algorithms)
                 except StopIteration:
                     self.stop()
+
             sleep(self.delay)
 
 
 class AudioControl(sounddevice.OutputStream):
+    """OutputStream of frequencies representing nums in SortControl"""
     def __init__(self, sort_control: SortControl, octaves: int):
         self.lowest = 210
         sounddevice.OutputStream.__init__(self, blocksize=self.lowest, channels=1, callback=self.callback)
@@ -155,8 +166,10 @@ class AudioControl(sounddevice.OutputStream):
 
         for num in self.sort_control.read_at_pointers():
             frequency = self.frequency(num)
+            # To display the num as a proportional frequency
 
             self.frequencies.setdefault(frequency, 0)
+            # Each frequency has a current index in the wave.
 
     def sine_waves(self, frames: int):
         # frames of audio controller
@@ -205,8 +218,11 @@ class SortApp(tkinter.Tk):
 
         self.settings_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.goto_settings)
         self.settings_button.pack()
+
         self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
-        self.shuffle_variable = tkinter.StringVar(self, "Random Input")
+        self.input_variable = tkinter.StringVar(self, "Random Input")
+        self.shuffle_variable = tkinter.StringVar(self, "Nothing")
+
         self.size_variable = tkinter.IntVar(self, self.sort_control.capacity)
         self.choosing_sort = False
         # PLEASE ALLOW USER TO SCRAMBLE FREELY BY COMBINING SHUFFLES AND INPUTS.
@@ -278,6 +294,9 @@ class SortApp(tkinter.Tk):
         sort_name = self.sort_variable.get()
         self.sort_control.choose_sort(sort_name)
 
+        input_name = self.input_variable.get()
+        self.sort_control.choose_input(input_name)
+
         shuffle_name = self.shuffle_variable.get()
         self.sort_control.choose_shuffle(shuffle_name)
 
@@ -293,10 +312,13 @@ class SortApp(tkinter.Tk):
 
         self.choosing_sort = True
 
-        sort_names = (sort.__doc__ for sort in sorts)
+        sort_names = self.sort_control.sorts.keys()
         tkinter.OptionMenu(self, self.sort_variable, self.sort_variable.get(), *sort_names).pack()
 
-        shuffle_names = (shuffle.__doc__ for shuffle in algorithms)
+        input_names = self.sort_control.inputs.keys()
+        tkinter.OptionMenu(self, self.input_variable, self.input_variable.get(), *input_names).pack()
+
+        shuffle_names = self.sort_control.shuffles.keys()
         tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
 
         tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable).pack()
