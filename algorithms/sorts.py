@@ -172,7 +172,7 @@ class HeapSort(Reversal):
                     # Done bubbling.
 
         if mode == "min":
-            for _ in self.reverse_array(0):
+            for _ in self.reverse_array(0, 0, self.playground.capacity):
                 yield
 
     def run(self):
