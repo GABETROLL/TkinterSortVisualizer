@@ -206,7 +206,7 @@ class SortApp(tkinter.Tk):
         self.settings_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.goto_settings)
         self.settings_button.pack()
         self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
-        self.shuffle_variable = tkinter.StringVar(self, "Random")
+        self.shuffle_variable = tkinter.StringVar(self, "Random Input")
         self.size_variable = tkinter.IntVar(self, self.sort_control.capacity)
         self.choosing_sort = False
         # PLEASE ALLOW USER TO SCRAMBLE FREELY BY COMBINING SHUFFLES AND INPUTS.
