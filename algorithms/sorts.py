@@ -5,14 +5,15 @@ from itertools import count, chain
 class BubbleSort(Algorithm):
     """Bubble Sort"""
     def run(self):
-        nums = self.playground.arrays[0]
+        nums_len = len(self.playground.main_array)
 
-        for sorted_elements in range(len(nums)):
-            for index in range(len(nums) - 1):
+        for sorted_elements in range(nums_len):
+            for index in range(nums_len - 1):
 
-                if self.playground.compare((0, index), ">", (0, index + 1)):
-                    yield
+                should_swap = self.playground.compare((0, index), ">", (0, index + 1))
+                yield
 
+                if should_swap:
                     self.playground.swap((0, index), (0, index + 1))
                     yield
 
@@ -20,16 +21,65 @@ class BubbleSort(Algorithm):
 class OptimizedBubbleSort(BubbleSort):
     """Optimized Bubble Sort"""
     def run(self):
-        nums = self.playground.arrays[0]
+        nums_len = len(self.playground.main_array)
 
-        for sorted_elements in range(len(nums)):
-            for index in range(len(nums) - sorted_elements - 1):
+        for sorted_elements in range(nums_len):
 
-                if self.playground.compare((0, index), ">", (0, index + 1)):
-                    yield
+            all_sorted = True
+            for index in range(nums_len - sorted_elements - 1):
 
+                should_swap = self.playground.compare((0, index), ">", (0, index + 1))
+                yield
+
+                if should_swap:
                     self.playground.swap((0, index), (0, index + 1))
                     yield
+
+                    all_sorted = False
+
+            if all_sorted:
+                break
+
+
+class CocktailShakerSort(Algorithm):
+    """Cocktail Shaker Sort"""
+    def run(self):
+        nums_len = len(self.playground.main_array)
+        for sorted_elements in range(nums_len):
+            for index in chain(range(sorted_elements, nums_len - sorted_elements - 1),
+                               range(nums_len - sorted_elements - 2, sorted_elements - 1, -1)):
+
+                should_swap = self.playground.compare((0, index), ">", (0, index + 1))
+                yield
+
+                if should_swap:
+                    self.playground.swap((0, index), (0, index + 1))
+                    yield
+
+
+class OptimizedCocktailShakerSort(CocktailShakerSort):
+    """Optimized Cocktail Shaker Sort"""
+    def run(self):
+        nums_len = len(self.playground.main_array)
+
+        for sorted_elements in range(nums_len):
+
+            all_sorted = True
+
+            for index in chain(range(sorted_elements, nums_len - sorted_elements - 1),
+                               range(nums_len - sorted_elements - 2, sorted_elements - 1, -1)):
+
+                should_swap = self.playground.compare((0, index), ">", (0, index + 1))
+                yield
+
+                if should_swap:
+                    self.playground.swap((0, index), (0, index + 1))
+                    yield
+
+                    all_sorted = False
+
+            if all_sorted:
+                break
 
 
 class InsertionSort(Algorithm):
@@ -660,6 +710,11 @@ class BogoSort(Verify, Shuffle):
                 yield
 
 
-sorts = [BubbleSort, OptimizedBubbleSort, InsertionSort, SelectionSort, MaxHeapSort, MinHeapSort, QuickSort, MergeSort,
-         MergeSortInPlace, RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort, PairwiseSortingNetwork, BogoSort]
+sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort,
+         InsertionSort,
+         SelectionSort, MaxHeapSort, MinHeapSort,
+         QuickSort,
+         MergeSort, MergeSortInPlace,
+         RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
+         BatchersBitonicSort, PairwiseSortingNetwork,
+         BogoSort]
