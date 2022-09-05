@@ -1,4 +1,5 @@
 from algorithms.inputs import *
+from itertools import chain
 
 
 class Nothing(Algorithm):
@@ -18,16 +19,31 @@ class Shuffle(Algorithm):
 
 class Reversal(Algorithm):
     """Reversal"""
-    def reverse_array(self, array_index: int):
-        array_length = len(self.playground.arrays[array_index])
-
-        for i in range(array_length // 2):
-            left, right = (array_index, i), (array_index, array_length - i - 1)
+    def reverse_array(self, array_index: int, start: int, end: int):
+        for i in range((end - start) // 2):
+            left, right = (array_index, start + i), (array_index, end - i - 1)
             self.playground.swap(left, right)
             yield
 
     def run(self):
-        for _ in self.reverse_array(0):
+        for _ in self.reverse_array(0, 0, len(self.playground.main_array)):
+            yield
+
+
+class RecursiveReversal(Reversal):
+    """Recursive Reversal"""
+    def _run(self, start: int, section_len: int):
+        if section_len < 2:
+            return
+
+        for _ in self.reverse_array(0, start, start + section_len):
+            yield
+
+        for _ in chain(self._run(start, section_len // 2), self._run(start + section_len // 2, section_len // 2)):
+            yield
+
+    def run(self):
+        for _ in self._run(0, len(self.playground.main_array)):
             yield
 
 
@@ -75,7 +91,7 @@ class MinHeap(Heapify):
             yield
 
 
-shuffles = [Nothing, Shuffle, Reversal, MaxHeap, MinHeap]
+shuffles = [Nothing, Shuffle, Reversal, RecursiveReversal, MaxHeap, MinHeap]
 algorithms = shuffles + inputs
 
 
