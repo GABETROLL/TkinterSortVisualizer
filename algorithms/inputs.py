@@ -30,7 +30,7 @@ class Linear(Input):
 class FinalRadixPass(Linear):
     """Final Radix Pass On Linear Input"""
     def run(self):
-        half_nums_len = self.playground.capacity // 2
+        half_nums_len = self.playground.array_len // 2
 
         for index in range(half_nums_len):
             even_num = index
@@ -39,6 +39,18 @@ class FinalRadixPass(Linear):
             self.playground.write(even_num + 1, (0, index * 2))
             yield
             self.playground.write(odd_num + 1, (0, index * 2 + 1))
+            yield
+
+
+class FinalMergePass(Linear):
+    """Final Merge Pass On Linear Input"""
+    def run(self):
+        for index, odd in enumerate(range(1, self.playground.array_len + 1, 2)):
+            self.playground.write(odd, (0, index))
+            yield
+
+        for index, even in enumerate(range(2, self.playground.array_len + 1, 2)):
+            self.playground.write(even, (0, self.playground.array_len // 2 + index))
             yield
 
 
@@ -58,9 +70,9 @@ class ManySimilar(Linear):
 class Quadratic(Input):
     """Quadratic Input"""
     def run(self):
-        half_len = self.playground.capacity // 2
-        shrink_factor = half_len ** 2 / self.playground.capacity
-        for index in range(self.playground.capacity):
+        half_len = self.playground.array_len // 2
+        shrink_factor = half_len ** 2 / self.playground.array_len
+        for index in range(self.playground.array_len):
             input_index = index - half_len
             output = int((input_index + 1) ** 2 / shrink_factor)
             self.playground.write(output, (0, index))
@@ -87,4 +99,4 @@ class SineWave(Input):
             yield
 
 
-inputs = [Random, Linear, FinalRadixPass, ManySimilar, Quadratic, SineWave]
+inputs = [Random, Linear, FinalRadixPass, FinalMergePass, ManySimilar, Quadratic, SineWave]

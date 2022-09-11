@@ -11,7 +11,7 @@ class Nothing(Algorithm):
 class Shuffle(Algorithm):
     """Shuffle"""
     def run(self):
-        nums_len = self.playground.capacity - 1
+        nums_len = self.playground.array_len - 1
         for index in range(nums_len):
             self.playground.swap((0, index), (0, randint(index + 1, nums_len)))
             yield

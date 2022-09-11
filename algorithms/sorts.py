@@ -172,7 +172,7 @@ class HeapSort(Reversal):
                     # Done bubbling.
 
         if mode == "min":
-            for _ in self.reverse_array(0, 0, self.playground.capacity):
+            for _ in self.reverse_array(0, 0, self.playground.array_len):
                 yield
 
     def run(self):
@@ -384,7 +384,7 @@ class RadixLSDSort(RadixSort):
         return digit, num
 
     def run(self):
-        self.playground.spawn_new_array(self.playground.capacity)
+        self.playground.spawn_new_array(self.playground.array_len)
         copy_array_index = 1
         yield
         # nums copy

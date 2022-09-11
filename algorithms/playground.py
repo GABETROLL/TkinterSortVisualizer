@@ -3,7 +3,7 @@ class SortPlayground:
     Counts swaps, comparisons, writes and reversals."""
 
     def __init__(self, capacity: int):
-        self.capacity = capacity
+        self.array_len = capacity
 
         self.arrays = [list(range(1, capacity + 1))]
         self.pointers = set()
@@ -40,7 +40,7 @@ class SortPlayground:
         self.reversals = 0
 
     def change_capacity(self, new_capacity: int):
-        self.capacity = new_capacity
+        self.array_len = new_capacity
         self.arrays[0] = list(range(new_capacity))
         self.reset()
 
