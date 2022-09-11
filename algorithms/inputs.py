@@ -111,5 +111,5 @@ class SineWave(Input):
             yield
 
 
-inputs = [Random, Linear, DecreasingRandom, FinalRadixPass, FinalMergePass, RandomFinalMergePass,
+inputs = [Random, Linear, DecreasingRandom, FinalRadixPass, FinalMergePass,
           ManySimilar, Quadratic, SineWave]
