@@ -27,6 +27,18 @@ class Linear(Input):
             yield
 
 
+class DecreasingRandom(Random, Linear):
+    """Decreasing Random"""
+    def run(self):
+        bottom = 1
+
+        for index in range(self.playground.main_array_len):
+            self.playground.write(randint(bottom, self.playground.main_array_len), (0, index))
+            yield
+
+            bottom += 1
+
+
 class FinalRadixPass(Linear):
     """Final Radix Pass On Linear Input"""
     def run(self):
@@ -99,4 +111,5 @@ class SineWave(Input):
             yield
 
 
-inputs = [Random, Linear, FinalRadixPass, FinalMergePass, ManySimilar, Quadratic, SineWave]
+inputs = [Random, Linear, DecreasingRandom, FinalRadixPass, FinalMergePass, RandomFinalMergePass,
+          ManySimilar, Quadratic, SineWave]
