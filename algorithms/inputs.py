@@ -13,7 +13,7 @@ class Input(Algorithm):
 class Random(Input):
     """Random Input"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
         for index in range(nums_len):
             self.playground.write(randint(1, nums_len), (0, index))
             yield
@@ -22,7 +22,7 @@ class Random(Input):
 class Linear(Input):
     """Linear Input"""
     def run(self):
-        for index in range(len(self.playground.main_array)):
+        for index in range(self.playground.main_array_len):
             self.playground.write(index + 1, (0, index))
             yield
 
@@ -30,7 +30,7 @@ class Linear(Input):
 class FinalRadixPass(Linear):
     """Final Radix Pass On Linear Input"""
     def run(self):
-        half_nums_len = self.playground.array_len // 2
+        half_nums_len = self.playground.main_array_len // 2
 
         for index in range(half_nums_len):
             even_num = index
@@ -45,12 +45,12 @@ class FinalRadixPass(Linear):
 class FinalMergePass(Linear):
     """Final Merge Pass On Linear Input"""
     def run(self):
-        for index, odd in enumerate(range(1, self.playground.array_len + 1, 2)):
+        for index, odd in enumerate(range(1, self.playground.main_array_len + 1, 2)):
             self.playground.write(odd, (0, index))
             yield
 
-        for index, even in enumerate(range(2, self.playground.array_len + 1, 2)):
-            self.playground.write(even, (0, self.playground.array_len // 2 + index))
+        for index, even in enumerate(range(2, self.playground.main_array_len + 1, 2)):
+            self.playground.write(even, (0, self.playground.main_array_len // 2 + index))
             yield
 
 
@@ -60,7 +60,7 @@ class ManySimilar(Linear):
     div: int = 16
 
     def run(self):
-        for index in range(len(self.playground.main_array)):
+        for index in range(self.playground.main_array_len):
             num = index // self.div * self.div
 
             self.playground.write(num, (0, index))
@@ -70,9 +70,9 @@ class ManySimilar(Linear):
 class Quadratic(Input):
     """Quadratic Input"""
     def run(self):
-        half_len = self.playground.array_len // 2
-        shrink_factor = half_len ** 2 / self.playground.array_len
-        for index in range(self.playground.array_len):
+        half_len = self.playground.main_array_len // 2
+        shrink_factor = half_len ** 2 / self.playground.main_array_len
+        for index in range(self.playground.main_array_len):
             input_index = index - half_len
             output = int((input_index + 1) ** 2 / shrink_factor)
             self.playground.write(output, (0, index))
@@ -82,7 +82,7 @@ class Quadratic(Input):
 class SineWave(Input):
     """Sine Wave Input"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
         shrink_factor = 2 * pi / nums_len
         # input goes from [0, num_len) to [0, 2 * pi)
 

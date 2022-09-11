@@ -2,10 +2,8 @@ class SortPlayground:
     """Playground for algorithms made of arrays.
     Counts swaps, comparisons, writes and reversals."""
 
-    def __init__(self, capacity: int):
-        self.array_len = capacity
-
-        self.arrays = [list(range(1, capacity + 1))]
+    def __init__(self, main_array_len: int):
+        self.arrays = [list(range(1, main_array_len + 1))]
         self.pointers = set()
 
         self.swaps = 0
@@ -17,6 +15,10 @@ class SortPlayground:
     @property
     def main_array(self):
         return self.arrays[0]
+
+    @property
+    def main_array_len(self):
+        return len(self.arrays[0])
 
     @property
     def array_count(self):
@@ -39,9 +41,8 @@ class SortPlayground:
         self.writes = 0
         self.reversals = 0
 
-    def change_capacity(self, new_capacity: int):
-        self.array_len = new_capacity
-        self.arrays[0] = list(range(new_capacity))
+    def change_main_array_len(self, new_len: int):
+        self.arrays[0] = list(range(1, new_len + 1))
         self.reset()
 
     def spawn_new_array(self, size: int):
@@ -59,24 +60,28 @@ class SortPlayground:
         self.arrays.pop(index)
 
     def read(self, index: tuple[int, int]):
+        """Returns num at array_index[0], position index[1]."""
         self.pointers = {index}
         self.reads += 1
 
         return self.arrays[index[0]][index[1]]
 
     def write(self, num: int, index: tuple[int, int]):
+        """Writes num at array_index[0], position index[1]."""
         self.pointers = {index}
         self.arrays[index[0]][index[1]] = num
 
         self.writes += 1
 
     def increment(self, num: int, index: tuple[int, int]):
+        """Increments num at array_index[0], position index[1]."""
         self.pointers = {index}
         self.arrays[index[0]][index[1]] += num
 
         self.writes += 1
 
     def array_iter(self, array_index: int):
+        """Yields nums at array_index."""
         for index, num in enumerate(self.arrays[array_index]):
             self.pointers = {(array_index, index)}
             yield num

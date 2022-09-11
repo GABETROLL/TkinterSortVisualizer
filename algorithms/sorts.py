@@ -5,7 +5,7 @@ from itertools import count, chain
 class BubbleSort(Algorithm):
     """Bubble Sort"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
 
         for sorted_elements in range(nums_len):
             for index in range(nums_len - 1):
@@ -21,7 +21,7 @@ class BubbleSort(Algorithm):
 class OptimizedBubbleSort(BubbleSort):
     """Optimized Bubble Sort"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
 
         for sorted_elements in range(nums_len):
 
@@ -44,7 +44,7 @@ class OptimizedBubbleSort(BubbleSort):
 class CocktailShakerSort(Algorithm):
     """Cocktail Shaker Sort"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
         for sorted_elements in range(nums_len):
             for index in chain(range(sorted_elements, nums_len - sorted_elements - 1),
                                range(nums_len - sorted_elements - 2, sorted_elements - 1, -1)):
@@ -60,7 +60,7 @@ class CocktailShakerSort(Algorithm):
 class OptimizedCocktailShakerSort(CocktailShakerSort):
     """Optimized Cocktail Shaker Sort"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
 
         for sorted_elements in range(nums_len):
 
@@ -106,10 +106,10 @@ class BinaryInsertionSort(InsertionSort):
 class SelectionSort(Algorithm):
     """Selection Sort"""
     def run(self):
-        for unsorted_start_index in range(len(self.playground.main_array)):
+        for unsorted_start_index in range(self.playground.main_array_len):
             smallest = None
 
-            for i in range(unsorted_start_index, len(self.playground.main_array)):
+            for i in range(unsorted_start_index, self.playground.main_array_len):
 
                 if not smallest or self.playground.compare((0, i), "<", smallest):
                     smallest = (0, i)
@@ -136,7 +136,7 @@ class HeapSort(Reversal):
             raise ValueError("Invalid Heap Sort mode.")
 
         # Once heap is done:
-        for sorted_index in range(len(self.playground.main_array) - 1, -1, -1):
+        for sorted_index in range(self.playground.main_array_len - 1, -1, -1):
             self.playground.swap((0, 0), (0, sorted_index))
 
             index = 0
@@ -172,7 +172,7 @@ class HeapSort(Reversal):
                     # Done bubbling.
 
         if mode == "min":
-            for _ in self.reverse_array(0, 0, self.playground.array_len):
+            for _ in self.reverse_array(0, 0, self.playground.main_array_len):
                 yield
 
     def run(self):
@@ -229,7 +229,7 @@ class QuickSort(Algorithm):
         # [1, 2, 0, 4, 3, 5, 8, 7, 6, 9]
         # repeat again with left and right halves.
         if end == 0:
-            end = len(self.playground.main_array)
+            end = self.playground.main_array_len
 
         pivot_index = self.median_of_three(start, (start + end) // 2, end - 1)
         self.playground.swap((0, start), (0, pivot_index))
@@ -271,7 +271,7 @@ class MergeSort(Algorithm):
     """Merge Sort"""
     def out_of_place(self, start=0, end=0):
         if end == 0:
-            end = len(self.playground.main_array)
+            end = self.playground.main_array_len
 
         section_length = end - start
 
@@ -323,7 +323,7 @@ class MergeSort(Algorithm):
                 yield
 
     def run(self):
-        self.playground.spawn_new_array(len(self.playground.main_array))
+        self.playground.spawn_new_array(self.playground.main_array_len)
         yield
 
         for _ in self.out_of_place():
@@ -360,7 +360,7 @@ class MergeSortInPlace(MergeSort):
                     break
 
     def run(self):
-        for _ in self.in_place(0, len(self.playground.main_array)):
+        for _ in self.in_place(0, self.playground.main_array_len):
             yield
 
 
@@ -384,7 +384,7 @@ class RadixLSDSort(RadixSort):
         return digit, num
 
     def run(self):
-        self.playground.spawn_new_array(self.playground.array_len)
+        self.playground.spawn_new_array(self.playground.main_array_len)
         copy_array_index = 1
         yield
         # nums copy
@@ -448,7 +448,7 @@ class RadixLSDSort(RadixSort):
 class RadixLSDSortInPlace(RadixLSDSort):
     """Radix LSD Sort In-Place"""
     def run(self):
-        nums_len = len(self.playground.main_array)
+        nums_len = self.playground.main_array_len
 
         for digit_index in count(1, 1):
 
@@ -491,7 +491,7 @@ class PigeonholeSort(Algorithm):
     """Pigeonhole Sort"""
     def run(self):
         min_num_index = (0, 0)
-        for index in range(len(self.playground.main_array)):
+        for index in range(self.playground.main_array_len):
             current_index = (0, index)
 
             new_min_number = self.playground.compare(current_index, "<", min_num_index)
@@ -503,10 +503,10 @@ class PigeonholeSort(Algorithm):
         min_num = self.playground.read(min_num_index)
         yield
 
-        self.playground.spawn_new_array(len(self.playground.main_array))
+        self.playground.spawn_new_array(self.playground.main_array_len)
         yield
 
-        for index in range(len(self.playground.main_array)):
+        for index in range(self.playground.main_array_len):
             num = self.playground.read((0, index))
             yield
 
@@ -528,7 +528,7 @@ class CountSort(Algorithm):
         min_index = 0
         max_index = 0
 
-        for index in range(len(self.playground.main_array)):
+        for index in range(self.playground.main_array_len):
             new_min_found = self.playground.compare((0, index), "<", (0, min_index))
             yield
 
@@ -573,9 +573,9 @@ class CountSort(Algorithm):
 class GravitySort(Algorithm):
     """Gravity Sort"""
     def run(self):
-        array_length = len(self.playground.main_array)
+        main_array_length = self.playground.main_array_len
 
-        self.playground.spawn_new_array(array_length)
+        self.playground.spawn_new_array(main_array_length)
         for _ in self.playground.copy_array(0, 1):
             yield
         copy_array_index = 1
@@ -590,7 +590,7 @@ class GravitySort(Algorithm):
         for height in range(max_num, 0, -1):
             beads_at_height = 0
 
-            for index in range(array_length):
+            for index in range(main_array_length):
                 num = self.playground.read((copy_array_index, index))
                 yield
 
@@ -601,7 +601,7 @@ class GravitySort(Algorithm):
                     # decrement
                 yield
 
-            for index in range(array_length - 1, array_length - 1 - beads_at_height, -1):
+            for index in range(main_array_length - 1, main_array_length - 1 - beads_at_height, -1):
                 self.playground.increment(1, (0, index))
                 yield
 
@@ -648,7 +648,7 @@ class BatchersBitonicSort(Concurrent):
             yield
 
     def run(self):
-        for _ in self.bitonic(0, len(self.playground.main_array), True):
+        for _ in self.bitonic(0, self.playground.main_array_len, True):
             yield
 
 
@@ -701,7 +701,7 @@ class PairwiseSortingNetwork(Concurrent):
 
     def run(self):
         """Assumes list's length is a power of 2."""
-        for _ in self.sorting_network(0, len(self.playground.main_array), 1):
+        for _ in self.sorting_network(0, self.playground.main_array_len, 1):
             yield
 
 

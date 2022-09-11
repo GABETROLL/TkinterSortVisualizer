@@ -32,9 +32,9 @@ class SortControl(Thread, SortPlayground):
     Runs loop with algorithm coroutines during the main window mainloop.
     Controls playing and pausing."""
 
-    def __init__(self, capacity: int, delay: float):
+    def __init__(self, main_array_len: int, delay: float):
         Thread.__init__(self)
-        SortPlayground.__init__(self, capacity)
+        SortPlayground.__init__(self, main_array_len)
 
         self.delay = delay
 
@@ -148,7 +148,7 @@ class AudioControl(sounddevice.OutputStream):
         return (self.samplerate - self.minimum_duration) * self.sort_control.delay + self.minimum_duration
 
     def frequency(self, num: int):
-        result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.array_len)
+        result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.main_array_len)
         return result
         # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
@@ -223,7 +223,7 @@ class SortApp(tkinter.Tk):
         self.input_variable = tkinter.StringVar(self, "Random Input")
         self.shuffle_variable = tkinter.StringVar(self, "Nothing")
 
-        self.size_variable = tkinter.IntVar(self, self.sort_control.array_len)
+        self.size_variable = tkinter.IntVar(self, self.sort_control.main_array_len)
         self.choosing_sort = False
         # PLEASE ALLOW USER TO SCRAMBLE FREELY BY COMBINING SHUFFLES AND INPUTS.
 
@@ -256,14 +256,14 @@ class SortApp(tkinter.Tk):
 
         self.canvas.delete("all")
 
-        bar_width = self.canvas.winfo_width() / (self.sort_control.array_len + 1)
+        bar_width = self.canvas.winfo_width() / (self.sort_control.main_array_len + 1)
         max_height = self.canvas.winfo_height() / self.sort_control.array_count
 
         for array_index, array in enumerate(self.sort_control.arrays):
 
             for num_index, num in enumerate(array):
                 try:
-                    height = max_height * num / self.sort_control.array_len
+                    height = max_height * num / self.sort_control.main_array_len
                 except ZeroDivisionError:
                     height = 0
 
@@ -273,7 +273,7 @@ class SortApp(tkinter.Tk):
                 y0 = max_height * array_index
 
                 color = "black" if (array_index, num_index) in self.sort_control.pointers else \
-                    rainbow_color(num, self.sort_control.array_len)
+                    rainbow_color(num, self.sort_control.main_array_len)
 
                 self.canvas.create_rectangle(x0,
                                              y0,
@@ -300,7 +300,7 @@ class SortApp(tkinter.Tk):
         shuffle_name = self.shuffle_variable.get()
         self.sort_control.choose_shuffle(shuffle_name)
 
-        self.sort_control.change_capacity(self.size_variable.get())
+        self.sort_control.change_main_array_len(self.size_variable.get())
 
         self.canvas.pack()
         self.play.pack()
@@ -321,7 +321,7 @@ class SortApp(tkinter.Tk):
         shuffle_names = self.sort_control.shuffles.keys()
         tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
 
-        tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable).pack()
+        tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
 
         tkinter.Button(self, text="OK", command=self.exit_settings).pack()
 

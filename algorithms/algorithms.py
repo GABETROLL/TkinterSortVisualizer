@@ -11,7 +11,7 @@ class Nothing(Algorithm):
 class Shuffle(Algorithm):
     """Shuffle"""
     def run(self):
-        nums_len = self.playground.array_len - 1
+        nums_len = self.playground.main_array_len - 1
         for index in range(nums_len):
             self.playground.swap((0, index), (0, randint(index + 1, nums_len)))
             yield
@@ -26,7 +26,7 @@ class Reversal(Algorithm):
             yield
 
     def run(self):
-        for _ in self.reverse_array(0, 0, len(self.playground.main_array)):
+        for _ in self.reverse_array(0, 0, self.playground.main_array_len):
             yield
 
 
@@ -43,8 +43,46 @@ class RecursiveReversal(Reversal):
             yield
 
     def run(self):
-        for _ in self._run(0, len(self.playground.main_array)):
+        for _ in self._run(0, self.playground.main_array_len):
             yield
+
+
+class HalfRotation(Algorithm):
+    """Half Rotation"""
+    def run(self):
+        half_len = self.playground.main_array_len // 2
+        self.playground.spawn_new_array(half_len)
+        yield
+
+        main_array_index = 0
+        copy_array_index = 1
+
+        for index in range(half_len):
+            left_side_num = self.playground.read((main_array_index, index))
+            yield
+
+            self.playground.write(left_side_num, (copy_array_index, index))
+            yield
+        # Copy left half of array
+
+        for index in range(half_len, self.playground.main_array_len):
+            right_side_num = self.playground.read((main_array_index, index))
+            yield
+
+            self.playground.write(right_side_num, (main_array_index, index - half_len))
+            yield
+        # Write right half of array in left side
+
+        for index in range(half_len):
+            copied_left_side_num = self.playground.read((copy_array_index, index))
+            yield
+
+            self.playground.write(copied_left_side_num, (main_array_index, half_len + index))
+            yield
+        # Write copied left side into right side of array.
+
+        self.playground.delete_array(copy_array_index)
+        yield
 
 
 class Heapify(Algorithm):
@@ -57,7 +95,7 @@ class Heapify(Algorithm):
         else:
             raise ValueError("Invalid Heap Sort mode.")
 
-        for index in range(1, len(self.playground.main_array)):
+        for index in range(1, self.playground.main_array_len):
 
             while 0 < index:
                 parent_index = (index - 1) >> 1
@@ -91,7 +129,7 @@ class MinHeap(Heapify):
             yield
 
 
-shuffles = [Nothing, Shuffle, Reversal, RecursiveReversal, MaxHeap, MinHeap]
+shuffles = [Nothing, Shuffle, Reversal, RecursiveReversal, HalfRotation, MaxHeap, MinHeap]
 algorithms = shuffles + inputs
 
 
