@@ -195,6 +195,13 @@ class MinHeapSort(Heapify, HeapSort):
 
 class QuickSort(Algorithm):
     """Quick Sort"""
+    def median_of_three(self, index_a: int, index_b: int, index_c: int):
+        """Returns index of the median of three numbers
+        located in the main array's 'a', 'b' and 'c' indexes."""
+        indexes = {index_a, index_b, index_c}
+        indexes.remove(min(indexes, key=lambda i: self.playground.read((0, i))))
+        return min(indexes, key=lambda i: self.playground.read((0, i)))
+
     def quick_sort(self, start=0, end=0):
         # [6, 8, 1, 7, 5, 9, 2, 0, 4, 3]
         # 6, 5, 3 -> median := 5
@@ -223,6 +230,10 @@ class QuickSort(Algorithm):
         # repeat again with left and right halves.
         if end == 0:
             end = len(self.playground.main_array)
+
+        pivot_index = self.median_of_three(start, (start + end) // 2, end - 1)
+        self.playground.swap((0, start), (0, pivot_index))
+        yield
 
         pivot_index = start
         pointer_index = start + 1
