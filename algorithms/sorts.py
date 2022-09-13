@@ -1,5 +1,5 @@
 from algorithms.algorithms import *
-from itertools import count, chain
+from itertools import count, chain, cycle
 
 
 class BubbleSort(Algorithm):
@@ -652,6 +652,35 @@ class BatchersBitonicSort(Concurrent):
             yield
 
 
+class IterativeBitonicSort(BatchersBitonicSort):
+    """Iterative Bitonic Sort"""
+    def run(self):
+        """Assumes main array has a power of 2 as its length."""
+        section_len = 2
+        while section_len <= self.playground.main_array_len:
+            half_section_len = section_len // 2
+            merge_len = half_section_len
+            while merge_len:
+
+                directions = cycle(direction for direction in ">" * half_section_len + "<" * half_section_len)
+
+                double_merge_len = merge_len * 2
+                for start in range(0, self.playground.main_array_len - merge_len, double_merge_len):
+
+                    for left in range(start, start + merge_len):
+                        right = left + merge_len
+
+                        should_swap = self.playground.compare((0, left), next(directions), (0, right))
+                        yield
+
+                        if should_swap:
+                            self.playground.swap((0, left), (0, right))
+                            yield
+
+                merge_len //= 2
+            section_len *= 2
+
+
 class PairwiseSortingNetwork(Concurrent):
     """Pairwise Sorting Network"""
 
@@ -712,8 +741,6 @@ class BogoSort(Verify, Shuffle):
             for _ in Verify.run(self):
                 yield
 
-            print(self.sorted)
-
             if self.sorted:
                 break
 
@@ -727,5 +754,5 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          QuickSort,
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort, PairwiseSortingNetwork,
+         BatchersBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
          BogoSort]
