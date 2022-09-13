@@ -82,6 +82,25 @@ class OptimizedCocktailShakerSort(CocktailShakerSort):
                 break
 
 
+class OddEvenSort(Algorithm):
+    """Odd Even Sort"""
+    def run(self):
+        done = False
+        while not done:
+            done = True
+
+            for index in chain(range(0, self.playground.main_array_len - 1, 2),  # evens
+                               range(1, self.playground.main_array_len - 1, 2)):  # odds
+                should_swap = self.playground.compare((0, index), ">", (0, index + 1))
+                yield
+
+                if should_swap:
+                    done = False
+
+                    self.playground.swap((0, index), (0, index + 1))
+                    yield
+
+
 class InsertionSort(Algorithm):
     """Insertion Sort"""
     def run(self):
@@ -748,7 +767,7 @@ class BogoSort(Verify, Shuffle):
                 yield
 
 
-sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort,
+sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
          InsertionSort,
          SelectionSort, MaxHeapSort, MinHeapSort,
          QuickSort,
