@@ -84,13 +84,15 @@ class OptimizedCocktailShakerSort(CocktailShakerSort):
 
 class OddEvenSort(Algorithm):
     """Odd Even Sort"""
-    def run(self):
+    def network(self, start: int, amount: int):
+        end = start + amount
+
         done = False
         while not done:
             done = True
 
-            for index in chain(range(0, self.playground.main_array_len - 1, 2),  # evens
-                               range(1, self.playground.main_array_len - 1, 2)):  # odds
+            for index in chain(range(start, end - 1, 2),  # evens
+                               range(start + 1, end - 1, 2)):  # odds
                 should_swap = self.playground.compare((0, index), ">", (0, index + 1))
                 yield
 
@@ -100,11 +102,15 @@ class OddEvenSort(Algorithm):
                     self.playground.swap((0, index), (0, index + 1))
                     yield
 
+    def run(self):
+        for _ in self.network(0, self.playground.main_array_len):
+            yield
+
 
 class InsertionSort(Algorithm):
     """Insertion Sort"""
     def run(self):
-        for unsorted_start_index in range(1, len(self.playground.arrays[0])):
+        for unsorted_start_index in range(1, self.playground.main_array_len):
             index = unsorted_start_index
 
             while 0 < index and self.playground.compare((0, index - 1), ">", (0, index)):
@@ -272,7 +278,7 @@ class QuickSort(Algorithm):
 
             pointer_index += 1
 
-        # print(start, pivot_index, pivot_index + 1, end)
+        # print(start, pivot_index, pivot_index + 1, amount)
 
         if 1 < (pivot_index - start):
             for _ in self.quick_sort(start, pivot_index):
@@ -753,6 +759,42 @@ class PairwiseSortingNetwork(Concurrent):
             yield
 
 
+class OddEvenMergesort(Concurrent):
+    """Odd-Even Merge Sort"""
+    def merge(self, start: int, amount: int, step=1):
+        if amount < 2:
+            return
+
+        new_amount = amount // 2
+        double_step = step * 2
+        for _ in chain(self.merge(start, new_amount, double_step), self.merge(start + step, new_amount, double_step)):
+            yield
+
+        for index in range(start + step, start + amount * step, step):
+            previous, current = (0, index - step), (0, index)
+            should_swap = self.playground.compare(previous, ">", current)
+            yield
+
+            if should_swap:
+                self.playground.swap(previous, current)
+                yield
+
+    def network(self, start: int, amount: int):
+        if amount < 2:
+            return
+
+        new_amount = amount // 2
+
+        for _ in chain(self.network(start, new_amount),
+                       self.network(start + new_amount, new_amount),
+                       self.merge(start, amount)):
+            yield
+
+    def run(self):
+        for _ in self.network(0, self.playground.main_array_len):
+            yield
+
+
 class BogoSort(Verify, Shuffle):
     """Bogo Sort"""
     def run(self):
@@ -773,5 +815,5 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          QuickSort,
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
+         BatchersBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork, OddEvenMergesort,
          BogoSort]

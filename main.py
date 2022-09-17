@@ -67,7 +67,7 @@ class SortControl(Thread, SortPlayground):
     def stop(self):
         self.playing = False
         self.reset()
-        # To refresh coroutines when they end.
+        # To refresh coroutines when they amount.
 
     def pause_play(self):
         self.playing = not self.playing
