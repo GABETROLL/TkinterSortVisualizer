@@ -135,4 +135,4 @@ class SineWave(Input):
 
 
 inputs = [Random, Linear, DecreasingRandom, FinalRadixPass, FinalMergePass,
-          ManySimilar, Quadratic, SquareRoot, Cubic, CubeRoot, SineWave]
+          ManySimilar, Quadratic, SquareRoot, Cubic, SineWave]
