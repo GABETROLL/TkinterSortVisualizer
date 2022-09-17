@@ -1,7 +1,7 @@
 from algorithms.algorithm import Algorithm
 from dataclasses import dataclass
 from random import randint
-from math import sin, pi
+from math import sin, pi, sqrt
 
 
 class Input(Algorithm):
@@ -91,6 +91,29 @@ class Quadratic(Input):
             yield
 
 
+class SquareRoot(Input):
+    """Square Root Input"""
+    def run(self):
+        scaling_factor = self.playground.main_array_len / sqrt(self.playground.main_array_len)
+        # sqrt(self.playground.main_array_len) * scaling_factor = self.playground.main_array_len
+        for index in range(self.playground.main_array_len):
+            output = int(sqrt(index) * scaling_factor)
+            self.playground.write(output, (0, index))
+            yield
+
+
+class Cubic(Input):
+    """Cubic Input"""
+    def run(self):
+        half_len = self.playground.main_array_len // 2
+        scaling_factor = half_len ** 2
+        for index in range(self.playground.main_array_len):
+            input_index = index - half_len
+            output = int(input_index ** 3 / scaling_factor + half_len)
+            self.playground.write(output, (0, index))
+            yield
+
+
 class SineWave(Input):
     """Sine Wave Input"""
     def run(self):
@@ -112,4 +135,4 @@ class SineWave(Input):
 
 
 inputs = [Random, Linear, DecreasingRandom, FinalRadixPass, FinalMergePass,
-          ManySimilar, Quadratic, SineWave]
+          ManySimilar, Quadratic, SquareRoot, Cubic, CubeRoot, SineWave]
