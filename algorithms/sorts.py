@@ -677,6 +677,19 @@ class BatchersBitonicSort(Concurrent):
             yield
 
 
+class IRBitonicSort(BatchersBitonicSort):
+    """Bitonic Sort (Iterative Network, Recursive Merge)"""
+    def run(self):
+        """Assumes main array has a power of 2 as its length."""
+        section_len = 2
+        while section_len <= self.playground.main_array_len:
+            for start, direction in zip(range(0, self.playground.main_array_len, section_len), cycle((True, False))):
+                for _ in self.merge(start, section_len, direction):
+                    yield
+
+            section_len *= 2
+
+
 class IterativeBitonicSort(BatchersBitonicSort):
     """Iterative Bitonic Sort"""
     def run(self):
@@ -795,6 +808,40 @@ class OddEvenMergesort(Concurrent):
             yield
 
 
+class IROddEvenMergesort(OddEvenMergesort):
+    """Odd-Even Mergesort (Iterative Network, Recursive Merge)"""
+    def run(self):
+        amount = 2
+        while amount <= self.playground.main_array_len:
+            for start in range(0, self.playground.main_array_len, amount):
+                for _ in self.merge(start, amount):
+                    yield
+            amount *= 2
+
+
+class IterativeOddEvenMergesort(OddEvenMergesort):
+    """Iterative Odd-Even Mergesort"""
+    def run(self):
+        amount = 2
+        while amount <= self.playground.main_array_len:
+
+            comb_distance = amount
+            while comb_distance:
+                for start in range(0, self.playground.main_array_len, amount):
+                    for left in range(start, start + amount - comb_distance):
+                        right = left + comb_distance
+
+                        should_swap = self.playground.compare((0, left), ">", (0, right))
+                        yield
+
+                        if should_swap:
+                            self.playground.swap((0, left), (0, right))
+                            yield
+
+                comb_distance //= 2
+            amount *= 2
+
+
 class BogoSort(Verify, Shuffle):
     """Bogo Sort"""
     def run(self):
@@ -815,5 +862,6 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          QuickSort,
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
-         BatchersBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork, OddEvenMergesort,
+         BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
+         OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
          BogoSort]
