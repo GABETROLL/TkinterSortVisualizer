@@ -842,6 +842,44 @@ class IterativeOddEvenMergesort(OddEvenMergesort):
             amount *= 2
 
 
+class SlowSort(Algorithm):
+    """Slow Sort"""
+    def slow(self, start: int, amount: int):
+        if amount < 2:
+            return
+
+        left_amount = amount // 2
+        right_amount = (amount + 1) // 2
+        for _ in chain(self.slow(start, left_amount), self.slow(start + left_amount, right_amount)):
+            yield
+
+        for current_amount in range(amount, 1, -1):
+            left_end = start + current_amount // 2 - 1
+            right_end = start + current_amount - 1
+
+            should_swap = self.playground.compare((0, left_end),
+                                                  ">",
+                                                  (0, right_end))
+            yield
+
+            if should_swap:
+                self.playground.swap((0, left_end), (0, right_end))
+                yield
+
+            right_half_amount = current_amount // 2
+            current_amount -= 1
+            left_half_amount = current_amount // 2
+            # Right side may have one more element when amount is odd.
+
+            for _ in chain(self.slow(start, left_half_amount),
+                           self.slow(start + left_half_amount, right_half_amount)):
+                yield
+
+    def run(self):
+        for _ in self.slow(0, self.playground.main_array_len):
+            yield
+
+
 class BogoSort(Verify, Shuffle):
     """Bogo Sort"""
     def run(self):
@@ -866,4 +904,4 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
          BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
          OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
-         BogoSort]
+         SlowSort, BogoSort]
