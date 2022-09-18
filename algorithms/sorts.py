@@ -846,6 +846,8 @@ class BogoSort(Verify, Shuffle):
     """Bogo Sort"""
     def run(self):
         while True:
+            self.sorted = True
+
             for _ in Verify.run(self):
                 yield
 
