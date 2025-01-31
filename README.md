@@ -1,7 +1,12 @@
 # TkinterSortVisualizer
 A sorting algorithm visualizer built with lots of different options for sorting algorithms, inputs and speeds.
 
+WARNING!!
+
 PLAYING THIS VISUALIZER CAN CAUSE SEIZURES, OVERSTIMULATION, HEADACHES, ETC, AND IS VERY OVERWHELMING TO THE SENSES. IT CONTAINS COLORED BARS MOVING AT 60+FPS, AND SOUNDS THAT CAN BE DESCRIBED AS 'VERY PIERCING'.
+
+<img src="sorting_screenshot.png" />
+
 ## Motivation
 Around 2022, I developed a special interest in sorting algorithms. I watched many YouTube videos that visualized sorting algorithms, and used pitch to 'audify' each number in the arrays being sorted. I saw lots of different sorting algorithm visualizers and visualization videos, all with their own features that I liked and disliked. 
 
