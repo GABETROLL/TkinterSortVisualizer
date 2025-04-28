@@ -256,21 +256,40 @@ class SortApp(tkinter.Tk):
 
         self.canvas.delete("all")
 
+        # The goal here is to decide what the max number's height in the canvas will be,
+        # so that the rest of the numbers's heights are drawn in proportion to the max number.
+        #
+        # I want to display all arrays taking up equal space in the height of the canvas,
+        # with the main array at the bottom, and each new array higher and higher.
+        # Therefore, the max height of a number in any array (`max_height`) is
+        # the height of the canvas divided by the amount of arrays.
         bar_width = self.canvas.winfo_width() / (self.sort_control.main_array_len + 1)
         max_height = self.canvas.winfo_height() / self.sort_control.array_count
 
         for array_index, array in enumerate(self.sort_control.arrays):
 
             for num_index, num in enumerate(array):
+                # Setting the height of the current number such that
+                # its ratio with the height of the array in the canvas
+                # equals the ratio of the number to the max number of the array.
+                #
+                # The array's length cannot be 0, but in case it somehow is,
+                # to prevent dividing by 0, set the height of that array in the canvas to 0,
+                # as if the array weren't even there.
                 try:
                     height = max_height * num / self.sort_control.main_array_len
+                    # Since the max number in the main array SHOULD BE
+                    # no greater than the length of the main array,
+                    #
+                    # Just assume that the max number in the array IS EQUAL TO the array's len.
                 except ZeroDivisionError:
                     height = 0
 
                 x0 = num_index * bar_width
                 x1 = x0 + bar_width
 
-                y0 = max_height * array_index
+                y0 = self.canvas.winfo_height() - max_height * array_index
+                y1 = y0 - height
 
                 color = "black" if (array_index, num_index) in self.sort_control.pointers else \
                     rainbow_color(num, self.sort_control.main_array_len)
@@ -278,7 +297,7 @@ class SortApp(tkinter.Tk):
                 self.canvas.create_rectangle(x0,
                                              y0,
                                              x1,
-                                             y0 + height,
+                                             y1,
                                              fill=color,
                                              outline=color)
         self.canvas.update()
