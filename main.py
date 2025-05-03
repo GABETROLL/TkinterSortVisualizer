@@ -148,9 +148,10 @@ class AudioControl(sounddevice.OutputStream):
         return (self.samplerate - self.minimum_duration) * self.sort_control.delay + self.minimum_duration
 
     def frequency(self, num: int):
+        """Returns the num as a frequency in an equal temperament scale
+        from `self.lowest` and with `self.octaves` octaves."""
         result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.main_array_len)
         return result
-        # equal temperament using self.sort_control.max as the number of notes per self.octaves octaves.
 
     def audify(self):
         """Changes the current frequency played."""
