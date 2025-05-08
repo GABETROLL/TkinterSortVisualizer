@@ -160,10 +160,6 @@ class AudioControl(sounddevice.OutputStream):
     @property
     def duration(self):
         """Duration of each note in frames."""
-        # 1 -> self.sample_rate
-        # 0 -> self.minimum_duration
-        # Length of note decreases linearly: max is one second (self.samplerate samples)
-        # and min is self.minimum_duration.
         return self.minimum_duration
 
     def frequency(self, num: int) -> float:
