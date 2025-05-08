@@ -12,7 +12,7 @@ from colorsys import hsv_to_rgb
 # for display
 
 
-def rainbow_color(num: int, max_num: int):
+def rainbow_color(num: int, max_num: int) -> str:
     try:
         hue = num / max_num
     except ZeroDivisionError:
@@ -115,18 +115,37 @@ class SortControl(Thread, SortPlayground):
 
 
 class AudioControl(sounddevice.OutputStream):
-    """OutputStream of frequencies representing nums in SortControl"""
+    """
+    OutputStream of frequencies representing nums in SortControl.
+
+    `self.sort_control` contains all the information about the sorts currently being played,
+    including what numbers in the array are currently being read/written. These are kept track of
+    in `self.sort_control.pointers`.
+
+    The point of this class is to create an instance of it, that for each frame it's called,
+    for each number pointed to in `self.sort_control`, plays a note
+    that represents the number being pointed to, with the pitch indicating the scale of the number.
+
+    Each time `callback` is called,
+    it returns a new numpy.array that represents the audio that needs to be played for this frame.
+
+    `octaves`: The amount of octaves of range the notes representing the numbers have.
+    """
     def __init__(self, sort_control: SortControl, octaves: int):
         self.lowest = 210
         sounddevice.OutputStream.__init__(self, blocksize=self.lowest, channels=1, callback=self.callback)
         # 210 divides 44100 evenly.
         # Should also match the harmonics of the lowest note.
+        # (??)
 
         self.sort_control = sort_control
 
-        self.octaves = octaves
+        self.octaves: int = octaves
+        """
+        The amount of octaves of range the notes representing the numbers have.
+        """
 
-        self.frequencies = {}
+        self.frequencies: dict[float, int] = {}
         # frequency: start_index
 
         self.start()
@@ -145,16 +164,23 @@ class AudioControl(sounddevice.OutputStream):
         # 0 -> self.minimum_duration
         # Length of note decreases linearly: max is one second (self.samplerate samples)
         # and min is self.minimum_duration.
-        return (self.samplerate - self.minimum_duration) * self.sort_control.delay + self.minimum_duration
+        return self.minimum_duration
 
-    def frequency(self, num: int):
+    def frequency(self, num: int) -> float:
         """Returns the num as a frequency in an equal temperament scale
         from `self.lowest` and with `self.octaves` octaves."""
         result = self.lowest * (2 ** self.octaves) ** (num / self.sort_control.main_array_len)
         return result
 
-    def audify(self):
-        """Changes the current frequency played."""
+    def store_new_frequencies(self) -> None:
+        """
+        Keeps track of each new frequency to play,
+        based on the numbers in `self.sort_control.read_at_pointers`.
+
+        Looks at each num pointed to in `self.sort_control.read_at_pointers`,
+        and if the frequency isn't already in `self.frequencies`, it adds the frequency
+        with an index of 0. Otherwise, it leaves its index the same.
+        """
         if not self.sort_control.playing:
             self.frequencies = {}
             return
@@ -174,23 +200,51 @@ class AudioControl(sounddevice.OutputStream):
 
     def sine_waves(self, frames: int):
         # frames of audio controller
-        """Returns sine_waves of all nums currently pointed at by self.sort_control
-        as added sine waves."""
-        result = numpy.zeros((frames, 1))
+        """
+        Returns the added sine waves of all nums
+        currently pointed at by self.sort_control, FOR THIS BLOCK OF AUDIO.
+
+        The individual sine waves of each num are added together,
+        by adding each of their graphs at each corresponding point in the current block.
+
+        This block should be `frames` units long.
+        
+        Each frequency added by `self.store_new_frequencies` in `self.frequencies`
+        starts with a corresponding index of 0. These indices exist to keep track of
+        "where in the sine wave graph" the frequency was left from the last audio block.
+        Then, every time this function is called,
+        the frequency's index is incremented by `frames` (Each "frame"
+        is a point in the result graph, and represents 1/frames of this audioblock).
+        """
+        result: numpy.ndarray = numpy.zeros((frames,))
 
         for frequency, start_index in self.frequencies.copy().items():
-            for frame_count in range(frames):
-                wave_index = start_index + frame_count
-                input_index = wave_index * 2 * numpy.pi * frequency / self.samplerate
+            stop_index: int = start_index + frames
+            """
+            (EXCLUSIVE)
+            """
 
-                amplitude = (self.duration - wave_index) / self.duration
-                # each note fades out
+            range_of_indices: numpy.ndarray = numpy.arange(start_index, stop_index, 1)
+            x_coordinates_of_sin_x: numpy.ndarray = range_of_indices * 2 * numpy.pi * frequency / self.samplerate
+            frequency_graph: numpy.ndarray = numpy.sin(x_coordinates_of_sin_x)
 
-                result[frame_count] += amplitude * numpy.sin(input_index)
+            block_amplitudes: numpy.ndarray = numpy.clip((self.duration - range_of_indices) / self.duration, 0, 1)
+            """
+            The amplitude of the frequency at each frame.
+            Should decrease linearly from 1 to 0.
 
-                if amplitude <= 0:
-                    self.frequencies.pop(frequency)
-                    break
+            The amplitudes should clamp at 0.
+            """
+
+            note_audio: numpy.ndarray = frequency_graph * block_amplitudes
+
+            # these both have shape (frames,)
+            assert result.shape == note_audio.shape, (result.shape, note_audio.shape)
+
+            result += note_audio
+
+            if (stop_index > self.duration):
+                self.frequencies.pop(frequency)
             else:
                 self.frequencies[frequency] += frames
 
@@ -199,8 +253,9 @@ class AudioControl(sounddevice.OutputStream):
     def callback(self, outdata: numpy.ndarray, frames: int, time, status) -> None:
         """writes sound output to 'outdata' Called by self in sounddevice.OutputStream."""
         # params may need annotations... :/
-        self.audify()
-        outdata[:] = self.sine_waves(frames)
+        self.store_new_frequencies()
+        result: numpy.ndarray = self.sine_waves(frames).reshape((frames,1))
+        outdata[:] = result
 
 
 class SortApp(tkinter.Tk):
