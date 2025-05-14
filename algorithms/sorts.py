@@ -218,6 +218,20 @@ class MinHeapSort(Heapify, HeapSort):
             yield
 
 
+class OptimizedMaxHeapSort(OptimizedHeapify, HeapSort):
+    """Optimized Max Heap Sort"""
+    def run(self):
+        for _ in chain(self.optimized_heapify("max"), self.sort("max")):
+            yield
+
+
+class OptimizedMinHeapSort(OptimizedHeapify, HeapSort):
+    """Optimized Min Heap Sort"""
+    def run(self):
+        for _ in chain(self.optimized_heapify("min"), self.sort("min")):
+            yield
+
+
 class QuickSort(Algorithm):
     """Quick Sort"""
     def median_of_three(self, index_a: int, index_b: int, index_c: int):
@@ -898,7 +912,7 @@ class BogoSort(Verify, Shuffle):
 
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
          InsertionSort,
-         SelectionSort, MaxHeapSort, MinHeapSort,
+         SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
          QuickSort,
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
