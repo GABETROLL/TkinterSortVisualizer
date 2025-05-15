@@ -341,7 +341,7 @@ class SortApp(tkinter.Tk):
         shuffle_names = self.sort_control.shuffles.keys()
         tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
 
-        tkinter.Scale(self, from_=4, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
+        tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
 
         tkinter.Button(self, text="OK", command=self.exit_settings).pack()
 
