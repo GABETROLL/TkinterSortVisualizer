@@ -128,6 +128,36 @@ class BinaryInsertionSort(InsertionSort):
         pass
 
 
+class CombSort(Algorithm):
+    """Comb Sort"""
+    def run(self):
+        interval: int = self.playground.main_array_len
+
+        while True:
+            no_swaps_were_needed: bool = True
+
+            for a_index in range(self.playground.main_array_len):
+                b_index = a_index + interval
+
+                if b_index not in range(self.playground.main_array_len):
+                    break
+
+                needs_swapping: bool = self.playground.compare((0, a_index), ">", (0, b_index))
+                yield
+
+                if needs_swapping:
+                    no_swaps_were_needed = False
+                    self.playground.swap((0, a_index), (0, b_index))
+                    yield
+
+            if no_swaps_were_needed and interval == 1:
+                break
+
+            interval = int(interval / 1.3)
+            if interval < 1:
+                interval = 1
+
+
 class SelectionSort(Algorithm):
     """Selection Sort"""
     def run(self):
@@ -911,7 +941,7 @@ class BogoSort(Verify, Shuffle):
 
 
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
-         InsertionSort,
+         InsertionSort, CombSort,
          SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
          QuickSort,
          MergeSort, MergeSortInPlace,
