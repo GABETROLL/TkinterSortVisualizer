@@ -134,6 +134,10 @@ class CombSort(Algorithm):
         interval: int = self.playground.main_array_len
 
         while True:
+            interval = int(interval / 1.3)
+            if interval < 1:
+                interval = 1
+
             no_swaps_were_needed: bool = True
 
             for a_index in range(self.playground.main_array_len):
@@ -152,10 +156,6 @@ class CombSort(Algorithm):
 
             if no_swaps_were_needed and interval == 1:
                 break
-
-            interval = int(interval / 1.3)
-            if interval < 1:
-                interval = 1
 
 
 class SelectionSort(Algorithm):
