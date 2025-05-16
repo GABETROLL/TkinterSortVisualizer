@@ -1,6 +1,7 @@
 from algorithms.algorithms import *
+from algorithms.algorithm import Option
 from itertools import count, chain, cycle
-
+from dataclasses import dataclass, field
 
 class BubbleSort(Algorithm):
     """Bubble Sort"""
@@ -436,7 +437,7 @@ class MergeSortInPlace(MergeSort):
 @dataclass
 class RadixSort(Algorithm):
     """Radix Sort"""
-    base: int = 10
+    options: dict[str, Option] = field(default_factory={"base": Option(10, range(2, 1024))}.copy)
 
     def run(self):
         raise NotImplementedError
@@ -444,11 +445,14 @@ class RadixSort(Algorithm):
 
 class RadixLSDSort(RadixSort):
     """Radix LSD Sort"""
-    def lsd_digit(self, num: int, place: int):
+    def lsd_digit(self, num: int, place: int) -> tuple[int, int]:
+        """
+        TODO: DOCUMENT
+        """
         digit = 0
         for _ in range(place):
-            digit = num % self.base
-            num = num // self.base
+            digit = num % self.options["base"].value
+            num = num // self.options["base"].value
 
         return digit, num
 
@@ -460,7 +464,7 @@ class RadixLSDSort(RadixSort):
 
         for digit_index in count(1, 1):
 
-            self.playground.spawn_new_array(self.base)
+            self.playground.spawn_new_array(self.options["base"].value)
             count_array_index = 2
             yield
             # counts array
@@ -485,7 +489,7 @@ class RadixLSDSort(RadixSort):
                 break
 
             prefix_sum = 0
-            for count_index in range(self.base):
+            for count_index in range(self.options["base"].value):
                 current_count = self.playground.read((count_array_index, count_index))
                 yield
 
@@ -521,7 +525,7 @@ class RadixLSDSortInPlace(RadixLSDSort):
 
         for digit_index in count(1, 1):
 
-            digit_pointers = [nums_len for _ in range(self.base)]
+            digit_pointers = [nums_len for _ in range(self.options["base"].value)]
             # where each bucket ends
 
             all_zeroes = True

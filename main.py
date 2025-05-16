@@ -10,6 +10,7 @@ from itertools import chain
 # for controlling core
 from colorsys import hsv_to_rgb
 # for display
+from collections.abc import Iterable, Callable
 
 
 def rainbow_color(num: int, max_num: int):
@@ -38,16 +39,16 @@ class SortControl(Thread, SortPlayground):
 
         self.delay = delay
 
-        self.sorts = {c.__doc__: c(self) for c in sorts}
-        self.sort_name = "Bubble Sort"
-        self.inputs = {c.__doc__: c(self) for c in inputs}
-        self.input_name = "Random Input"
-        self.shuffles = {c.__doc__: c(self) for c in shuffles}
-        self.shuffle_name = "Nothing"
+        self.sort_classes: dict[str, Algorithm] = {sort_cls.__doc__: sort_cls for sort_cls in sorts}
+        self.chosen_sort: Algorithm = BubbleSort(self)
+        self.input_classes: dict[str, Algorithm] = {input_cls.__doc__: input_cls for input_cls in inputs}
+        self.chosen_input: Algorithm = Linear(self)
+        self.shuffle_classes: dict[str, Algorithm] = {shuffle_cls.__doc__: shuffle_cls for shuffle_cls in shuffles}
+        self.chosen_shuffle: Algorithm = Shuffle(self)
         self.verify_algorithm = Verify(self)
         # Settings chosen by UI.
 
-        self.chosen_algorithms = iter(())
+        self.chosen_algorithms: Iterable[None] = iter(())
         # chain of all chosen algorithms
         self.reset()
         # define chain
@@ -58,9 +59,9 @@ class SortControl(Thread, SortPlayground):
 
     def reset(self):
         """Resets self.chosen_algorithms and resets self as SortPlayground."""
-        self.chosen_algorithms = chain(self.inputs[self.input_name].run(),
-                                       self.shuffles[self.shuffle_name].run(),
-                                       self.sorts[self.sort_name].run(),
+        self.chosen_algorithms = chain(self.chosen_input.run(),
+                                       self.chosen_shuffle.run(),
+                                       self.chosen_sort.run(),
                                        self.verify_algorithm.run())
         SortPlayground.reset(self)
 
@@ -75,26 +76,47 @@ class SortControl(Thread, SortPlayground):
     def change_delay(self, s: float):
         self.delay = s
 
-    def choose_input(self, name: str):
-        if not (name in self.inputs):
+    def choose_input(self, name: str, options: dict[str, object] | None):
+        if not (name in self.input_classes):
             raise KeyError(f"Input '{name}' doesn't exist.")
-        self.input_name = name
+        
+        input_cls: Algorithm = self.input_classes[name]
+        
+        self.chosen_input = (
+            input_cls(self, options)
+            if options is not None
+            else input_cls(self)
+        )
 
         self.stop()
         # restart
 
-    def choose_shuffle(self, name: str):
-        if not (name in self.shuffles):
+    def choose_shuffle(self, name: str, options: dict[str, object] | None):
+        if not (name in self.shuffle_classes):
             raise KeyError(f"Shuffle '{name}' doesn't exist.")
-        self.shuffle_name = name
+
+        shuffle_cls: Algorithm = self.shuffle_classes[name]
+
+        self.chosen_shuffle = (
+            shuffle_cls(self, options)
+            if options is not None
+            else shuffle_cls(self)
+        )
 
         self.stop()
         # restart
 
-    def choose_sort(self, name: str):
-        if not (name in self.sorts):
+    def choose_sort(self, name: str, options: dict[str, object] | None):
+        if not (name in self.sort_classes):
             raise KeyError(f"Sort '{name}' doesn't exist.")
-        self.sort_name = name
+
+        sort_cls: Algorithm = self.sort_classes[name]
+
+        self.chosen_sort = (
+            sort_cls(self, options)
+            if options is not None
+            else sort_cls(self)
+        )
 
         self.stop()
         # restart
@@ -203,6 +225,71 @@ class AudioControl(sounddevice.OutputStream):
         outdata[:] = self.sine_waves(frames)
 
 
+class AlgorithmMenu(tkinter.Frame):
+    def __init__(
+        self,
+        master,
+        variable_default: str,
+        variable_allowed_values: Iterable,
+        variable_name: str,
+        update_info: Callable[[str, dict[str, Option]], dict[str, Option]],
+    ):
+        tkinter.Frame.__init__(self, master)
+
+        self.update_info = update_info
+
+        self.variable = tkinter.StringVar(self, variable_default, variable_name)
+        self.option_variables_and_menus: dict[str, (tkinter.Variable, tkinter.Widget)] = {}
+
+
+        def menu_callback(value: str) -> None:
+            default_options: dict[str, Option] = update_info(value, None)
+            self.add_options(default_options)
+
+
+        self.label = tkinter.Label(self, text=variable_name)
+        self.menu = tkinter.OptionMenu(
+            self,
+            self.variable,
+            self.variable.get(),
+            *variable_allowed_values,
+            command=lambda value: menu_callback(value),
+        )
+        self.menu.pack()
+    
+    @property
+    def options(self) -> dict[str, Option]:
+        return {
+            name: variable.get()
+            for name, (variable, widget) in self.option_variables_and_menus
+        }
+
+    def add_options(self, options: dict[str, Option]) -> None:
+        for option_name, option_info in options.items():
+
+            option_variable = tkinter.StringVar(self, option_info.value, option_name)
+
+            def callback(value: str) -> None:
+                new_options: dict[str, Option] = self.options
+                new_options[option_name] = value
+
+                self.update_info(self.variable.get(), new_options)
+
+            option_menu = tkinter.OptionMenu(
+                self,
+                option_variable,
+                option_variable.get(),
+                *option_info.allowed_values,
+                command=callback
+            )
+            option_menu.pack()
+
+            self.option_variables_and_menus[option_name] = (
+                option_variable,
+                option_menu,
+            )
+
+
 class SortApp(tkinter.Tk):
     def __init__(self, sort_control: SortControl):
         tkinter.Tk.__init__(self)
@@ -220,9 +307,43 @@ class SortApp(tkinter.Tk):
         self.settings_button = tkinter.Button(self, text="Sorts/Shuffles", command=self.goto_settings)
         self.settings_button.pack()
 
-        self.sort_variable = tkinter.StringVar(self, "Bubble Sort")
-        self.input_variable = tkinter.StringVar(self, "Random Input")
-        self.shuffle_variable = tkinter.StringVar(self, "Nothing")
+
+        def sort_callback(new_sort: str, new_options: dict[str, Option]) -> dict[str, Option]:
+            self.sort_control.choose_sort(new_sort, new_options)
+            return self.sort_control.chosen_sort.options
+
+
+        def input_callback(new_input: str, new_options: dict[str, Option]) -> dict[str, Option]:
+            self.sort_control.choose_input(new_input, new_options)
+            return self.sort_control.chosen_input.options
+
+
+        def shuffle_callback(new_shuffle: str, new_options: dict[str, Option]) -> dict[str, Option]:
+            self.sort_control.choose_shuffle(new_shuffle, new_options)
+            return self.sort_control.chosen_shuffle.options
+
+
+        self.sort_menu = AlgorithmMenu(
+            self,
+            "Bubble Sort",
+            self.sort_control.sort_classes.keys(),
+            "sort",
+            sort_callback,
+        )
+        self.input_menu = AlgorithmMenu(
+            self,
+            "Random Input",
+            self.sort_control.input_classes.keys(),
+            "input",
+            input_callback,
+        )
+        self.shuffle_menu = AlgorithmMenu(
+            self,
+            "Nothing",
+            self.sort_control.shuffle_classes.keys(),
+            "shuffle",
+            shuffle_callback,
+        )
 
         self.size_variable = tkinter.IntVar(self, self.sort_control.main_array_len)
         self.choosing_sort = False
@@ -311,8 +432,11 @@ class SortApp(tkinter.Tk):
         self.clear_screen()
         self.choosing_sort = False
 
-        sort_name = self.sort_variable.get()
-        self.sort_control.choose_sort(sort_name)
+        """sort_name = self.sort_variable.get()
+        self.sort_control.choose_sort(
+            sort_name,
+            self.sort_option_variables
+        )
 
         input_name = self.input_variable.get()
         self.sort_control.choose_input(input_name)
@@ -320,7 +444,7 @@ class SortApp(tkinter.Tk):
         shuffle_name = self.shuffle_variable.get()
         self.sort_control.choose_shuffle(shuffle_name)
 
-        self.sort_control.change_main_array_len(self.size_variable.get())
+        self.sort_control.change_main_array_len(self.size_variable.get()) """
 
         self.canvas.pack()
         self.play.pack()
@@ -332,14 +456,9 @@ class SortApp(tkinter.Tk):
 
         self.choosing_sort = True
 
-        sort_names = self.sort_control.sorts.keys()
-        tkinter.OptionMenu(self, self.sort_variable, self.sort_variable.get(), *sort_names).pack()
-
-        input_names = self.sort_control.inputs.keys()
-        tkinter.OptionMenu(self, self.input_variable, self.input_variable.get(), *input_names).pack()
-
-        shuffle_names = self.sort_control.shuffles.keys()
-        tkinter.OptionMenu(self, self.shuffle_variable, self.shuffle_variable.get(), *shuffle_names).pack()
+        self.sort_menu.pack()
+        self.input_menu.pack()
+        self.shuffle_menu.pack()
 
         tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
 
