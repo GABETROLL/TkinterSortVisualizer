@@ -518,19 +518,7 @@ class SortApp(tkinter.Tk):
         self.clear_screen()
         self.choosing_sort = False
 
-        """sort_name = self.sort_variable.get()
-        self.sort_control.choose_sort(
-            sort_name,
-            self.sort_option_variables
-        )
-
-        input_name = self.input_variable.get()
-        self.sort_control.choose_input(input_name)
-
-        shuffle_name = self.shuffle_variable.get()
-        self.sort_control.choose_shuffle(shuffle_name)
-
-        self.sort_control.change_main_array_len(self.size_variable.get()) """
+        self.sort_control.change_main_array_len(self.size_variable.get())
 
         self.canvas.pack()
         self.play.pack()
