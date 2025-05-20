@@ -225,69 +225,135 @@ class AudioControl(sounddevice.OutputStream):
         outdata[:] = self.sine_waves(frames)
 
 
+# sort: Bubble Sort
+#       Radix Sort
+#         base: 2
+#               ...
+#               1024
+#
+# MenuData(
+#   "sort",
+#   "Bubble Sort",
+#   {
+#     "Bubble Sort": []
+#     "Radix Sort": [
+#       MenuData(
+#         "base",
+#         2,
+#         {
+#           2: [],
+#           ...
+#           1024: [],
+#         },
+#       ),
+#     ],
+#   },
+# )
+@dataclass
+class MenuData:
+    name: str
+    initial_value: object
+    allowed_values: dict[object, list]
+
+
+# v = tkinter.Variable(self, "Bubble Sort", "sort")
+# m = tkinter.OptionMenu(self, v, v.get(), *menu_data.allowed_values.keys())
+#   vr = tkinter.Variable(self, 2, base)
+#   mr = tkinter.OptionMenu(self, vr, vr.get(), *)
+
 class AlgorithmMenu(tkinter.Frame):
     def __init__(
         self,
         master,
-        variable_default: str,
-        variable_allowed_values: Iterable,
-        variable_name: str,
-        update_info: Callable[[str, dict[str, Option]], dict[str, Option]],
+        menu_data: MenuData,
+        update_info: Callable[[str, dict[str, Option]], None],
     ):
         tkinter.Frame.__init__(self, master)
 
         self.update_info = update_info
 
-        self.variable = tkinter.StringVar(self, variable_default, variable_name)
-        self.option_variables_and_menus: dict[str, (tkinter.Variable, tkinter.Widget)] = {}
+        self.menu_data: MenuData = menu_data
 
-
-        def menu_callback(value: str) -> None:
-            default_options: dict[str, Option] = update_info(value, None)
-            self.add_options(default_options)
-
-
-        self.label = tkinter.Label(self, text=variable_name)
+        self.variable = tkinter.Variable(self, menu_data.initial_value, menu_data.name)
+        self.label = tkinter.Label(self, text=menu_data.name)
         self.menu = tkinter.OptionMenu(
             self,
             self.variable,
             self.variable.get(),
-            *variable_allowed_values,
-            command=lambda value: menu_callback(value),
+            *menu_data.allowed_values.keys(),
+            command=self.menu_callback,
         )
+        self.label.pack()
         self.menu.pack()
-    
+
+        self.sub_menus: dict[object, list[AlgorithmMenu]] = {}
+        """
+        A dictionary of all the options for this menu,
+        and all of the sub-menus that need to spawn on screen
+        when each corresponding option was chosen.
+        """
+
+
+        def child_update_info(child_name: str, child_options: dict[str, Option]):
+            print(f"CHILD UPDATING: {child_name = }, {child_options = }")
+
+            new_sub_options: dict[str, Option] = self.current_sub_options
+            new_sub_options[child_name] = child_options
+
+            update_info(self.variable.get(), new_sub_options)
+
+
+        for option, option_menu_datas in menu_data.allowed_values.items():
+            option_algorithm_menus: list[AlgorithmMenu] = []
+
+            for option_menu_data in option_menu_datas:
+                option_algorithm_menus.append(
+                    AlgorithmMenu(self, option_menu_data, child_update_info)
+                )
+
+            self.sub_menus[option] = option_algorithm_menus
+
+        # print(self.sub_menus)
+
+        for child_menu in self.sub_menus[menu_data.initial_value]:
+            child_menu.pack()
+
+    def __repr__(self) -> str:
+        return f"AlgorithmMenu(name={self.menu_data.name}, value={self.variable.get()}, sub_menus={ {option: repr(menu) for option, menu in self.sub_menus.items()} })"
+
     @property
-    def options(self) -> dict[str, Option]:
+    def current_sub_options(self) -> dict[str, Option]:
+        """
+        The state of the currently chosen options (in the tkinter menus)
+        in the children `AlgorithmMenu`'s that SHOULD be spawned when `self`'s
+        current option is selected.
+        """
+        child_nodes: list[AlgorithmMenu] = self.sub_menus[self.variable.get()]
+
         return {
-            name: variable.get()
-            for name, (variable, widget) in self.option_variables_and_menus
+            child_node.menu_data.name: Option(child_node.variable.get(), child_node.menu_data.allowed_values)
+            for child_node in child_nodes
         }
 
-    def add_options(self, options: dict[str, Option]) -> None:
-        for option_name, option_info in options.items():
+    def menu_callback(self, value: object) -> None:
+        """
+        The callback for `self.menu`, so that when the user chooses `value`
+        through `self.menu`, this method calls `self.update_info` with
+        the chosen value and all of the options from the value's corresponding sub-menus.
 
-            option_variable = tkinter.StringVar(self, option_info.value, option_name)
+        This method also un-packs all child menus from `self`
+        (in `self.sub_menus[*][*]`), and packs `value`'s
+        corresponding sub-menus into `self`
+        (packs `self.sub_menus[value][*]`).
+        """
+        self.update_info(value, self.current_sub_options)
 
-            def callback(value: str) -> None:
-                new_options: dict[str, Option] = self.options
-                new_options[option_name] = value
+        for option_menu_list in self.sub_menus.values():
+            for menu in option_menu_list:
+                menu.pack_forget()
 
-                self.update_info(self.variable.get(), new_options)
-
-            option_menu = tkinter.OptionMenu(
-                self,
-                option_variable,
-                option_variable.get(),
-                *option_info.allowed_values,
-                command=callback
-            )
-            option_menu.pack()
-
-            self.option_variables_and_menus[option_name] = (
-                option_variable,
-                option_menu,
-            )
+        for menu in self.sub_menus[value]:
+            menu.pack()
 
 
 class SortApp(tkinter.Tk):
@@ -308,40 +374,60 @@ class SortApp(tkinter.Tk):
         self.settings_button.pack()
 
 
-        def sort_callback(new_sort: str, new_options: dict[str, Option]) -> dict[str, Option]:
+        def generate_menu(
+            menu_name: str,
+            chosen_algorithm_name: str,
+            algorithm_classes_dict: dict[str, Algorithm],
+            menu_callback: Callable[[str, dict[str, Option]], None],
+        ) -> AlgorithmMenu:
+            return AlgorithmMenu(
+                self,
+                MenuData(
+                    menu_name,
+                    chosen_algorithm_name,
+                    {
+                        name: [
+                            MenuData(option_name, option_info.value, {value: [] for value in option_info.allowed_values})
+                            for option_name, option_info in algorithm.options.items()
+                        ]
+                        for name, algorithm in {
+                            name: algorithm_cls(self.sort_control)
+                            for name, algorithm_cls in algorithm_classes_dict.items()
+                        }.items()
+                    },
+                ),
+                menu_callback,
+            )
+
+
+        def sort_callback(new_sort: str, new_options: dict[str, Option]) -> None:
             self.sort_control.choose_sort(new_sort, new_options)
-            return self.sort_control.chosen_sort.options
 
 
-        def input_callback(new_input: str, new_options: dict[str, Option]) -> dict[str, Option]:
+        def input_callback(new_input: str, new_options: dict[str, Option]) -> None:
             self.sort_control.choose_input(new_input, new_options)
-            return self.sort_control.chosen_input.options
 
 
-        def shuffle_callback(new_shuffle: str, new_options: dict[str, Option]) -> dict[str, Option]:
+        def shuffle_callback(new_shuffle: str, new_options: dict[str, Option]) -> None:
             self.sort_control.choose_shuffle(new_shuffle, new_options)
-            return self.sort_control.chosen_shuffle.options
 
 
-        self.sort_menu = AlgorithmMenu(
-            self,
-            "Bubble Sort",
-            self.sort_control.sort_classes.keys(),
+        self.sort_menu: AlgorithmMenu = generate_menu(
             "sort",
+            self.sort_control.chosen_sort.__doc__,
+            self.sort_control.sort_classes,
             sort_callback,
         )
-        self.input_menu = AlgorithmMenu(
-            self,
-            "Random Input",
-            self.sort_control.input_classes.keys(),
+        self.input_menu: AlgorithmMenu = generate_menu(
             "input",
+            self.sort_control.chosen_input.__doc__,
+            self.sort_control.input_classes,
             input_callback,
         )
-        self.shuffle_menu = AlgorithmMenu(
-            self,
-            "Nothing",
-            self.sort_control.shuffle_classes.keys(),
+        self.shuffle_menu: AlgorithmMenu = generate_menu(
             "shuffle",
+            self.sort_control.chosen_shuffle.__doc__,
+            self.sort_control.shuffle_classes,
             shuffle_callback,
         )
 
