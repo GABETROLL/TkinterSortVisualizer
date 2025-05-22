@@ -1,4 +1,6 @@
 from algorithms.algorithms import *
+from algorithms.algorithm import Option
+from collections.abc import Iterable
 from itertools import count, chain, cycle
 
 
@@ -128,6 +130,40 @@ class BinaryInsertionSort(InsertionSort):
         pass
 
 
+class BaiaiSort(Algorithm):
+    """Baiai Sort"""
+    # Special thanks to Kuvina in YouTube,
+    # where I received the knowledge to code this sort!
+    def run(self):
+        # The algorithm's time complexity is O(n^2).
+        # Space complexity: O(1)
+        end_indices: Iterable[int] = chain(
+            range(2, self.playground.main_array_len + 1),
+            range(self.playground.main_array_len - 1, 1, -1)
+        )
+        # O(1). Initializing these iterables doesn't compute anything.
+        # Instead, they just store the start, stop, step and iterable parameters.
+
+        for end_index in end_indices:
+            # O(n)
+            iteration_start_index: int = end_index & 1
+            # O(1)
+            for a_index in range(iteration_start_index, end_index, 2):
+                # O(n)
+                b_index: int = a_index + 1
+                # O(1) 
+
+                should_swap: bool = self.playground.compare((0, a_index), ">", (0, b_index))
+                yield
+                # O(1)
+
+                if should_swap:
+                    # O(1)
+                    self.playground.swap((0, a_index), (0, b_index))
+                    # O(1)
+                    yield
+
+
 class CombSort(Algorithm):
     """Comb Sort"""
     def run(self):
@@ -156,6 +192,19 @@ class CombSort(Algorithm):
 
             if no_swaps_were_needed and interval == 1:
                 break
+
+
+class ExchangeSort(Algorithm):
+    """Exchange Sort"""
+    def run(self):
+        for start_index in range(self.playground.main_array_len - 1):
+            for exchange_index in range(start_index + 1, self.playground.main_array_len):
+                should_swap: bool = self.playground.compare((0, start_index), ">", (0, exchange_index))
+                yield
+
+                if should_swap:
+                    self.playground.swap((0, start_index), (0, exchange_index))
+                    yield
 
 
 class SelectionSort(Algorithm):
@@ -941,7 +990,7 @@ class BogoSort(Verify, Shuffle):
 
 
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
-         InsertionSort, CombSort,
+         InsertionSort, BaiaiSort, CombSort, ExchangeSort,
          SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
          QuickSort,
          MergeSort, MergeSortInPlace,
