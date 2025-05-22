@@ -400,13 +400,14 @@ class SortApp(tkinter.Tk):
 
 
         def generate_menu(
+            master: tkinter.Widget,
             menu_name: str,
             chosen_algorithm_name: str,
             algorithm_classes_dict: dict[str, Algorithm],
             menu_callback: Callable[[str, dict[str, Option]], None],
         ) -> AlgorithmMenu:
             return AlgorithmMenu(
-                self,
+                master,
                 MenuData(
                     menu_name,
                     chosen_algorithm_name,
@@ -443,28 +444,36 @@ class SortApp(tkinter.Tk):
             self.sort_control.choose_shuffle(new_shuffle, new_options)
 
 
+        self.sort_menu_frame = tkinter.Frame(self)
         self.sort_menu: AlgorithmMenu = generate_menu(
+            self.sort_menu_frame,
             "sort",
             self.sort_control.chosen_sort.__doc__,
             self.sort_control.sort_classes,
             sort_callback,
         )
+        self.sort_menu.pack()
+        self.input_menu_frame = tkinter.Frame(self)
         self.input_menu: AlgorithmMenu = generate_menu(
+            self.input_menu_frame,
             "input",
             self.sort_control.chosen_input.__doc__,
             self.sort_control.input_classes,
             input_callback,
         )
+        self.input_menu.pack()
+        self.shuffle_menu_frame = tkinter.Frame(self)
         self.shuffle_menu: AlgorithmMenu = generate_menu(
+            self.shuffle_menu_frame,
             "shuffle",
             self.sort_control.chosen_shuffle.__doc__,
             self.sort_control.shuffle_classes,
             shuffle_callback,
         )
+        self.shuffle_menu.pack()
 
         self.size_variable = tkinter.IntVar(self, self.sort_control.main_array_len)
         self.choosing_sort = False
-        # PLEASE ALLOW USER TO SCRAMBLE FREELY BY COMBINING SHUFFLES AND INPUTS.
 
         self.min_delay = 0
         self.max_delay = 1
@@ -561,9 +570,9 @@ class SortApp(tkinter.Tk):
 
         self.choosing_sort = True
 
-        self.sort_menu.pack()
-        self.input_menu.pack()
-        self.shuffle_menu.pack()
+        self.sort_menu_frame.pack()
+        self.input_menu_frame.pack()
+        self.shuffle_menu_frame.pack()
 
         tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
 
