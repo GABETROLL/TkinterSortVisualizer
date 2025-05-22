@@ -261,30 +261,26 @@ class MenuData:
 #   vr = tkinter.Variable(self, 2, base)
 #   mr = tkinter.OptionMenu(self, vr, vr.get(), *)
 
-class AlgorithmMenu(tkinter.Frame):
+class AlgorithmMenu:
     def __init__(
         self,
         master,
         menu_data: MenuData,
         update_info: Callable[[str, dict[str, Option]], None],
     ):
-        tkinter.Frame.__init__(self, master)
-
         self.update_info = update_info
 
         self.menu_data: MenuData = menu_data
 
-        self.variable = tkinter.Variable(self, menu_data.initial_value, menu_data.name)
-        self.label = tkinter.Label(self, text=menu_data.name)
+        self.variable = tkinter.Variable(master, menu_data.initial_value, menu_data.name)
+        self.label = tkinter.Label(master, text=menu_data.name)
         self.menu = tkinter.OptionMenu(
-            self,
+            master,
             self.variable,
             self.variable.get(),
             *menu_data.allowed_values.keys(),
             command=self.menu_callback,
         )
-        self.label.pack()
-        self.menu.pack()
 
         self.sub_menus: dict[object, list[AlgorithmMenu]] = {}
         """
@@ -295,7 +291,7 @@ class AlgorithmMenu(tkinter.Frame):
 
 
         def child_update_info(child_name: str, child_options: dict[str, Option]):
-            print(f"CHILD UPDATING: {child_name = }, {child_options = }")
+            # print(f"CHILD UPDATING: {child_name = }, {child_options = }")
 
             new_sub_options: dict[str, Option] = self.current_sub_options
             new_sub_options[child_name] = child_options
@@ -308,7 +304,7 @@ class AlgorithmMenu(tkinter.Frame):
 
             for option_menu_data in option_menu_datas:
                 option_algorithm_menus.append(
-                    AlgorithmMenu(self, option_menu_data, child_update_info)
+                    AlgorithmMenu(master, option_menu_data, child_update_info)
                 )
 
             self.sub_menus[option] = option_algorithm_menus
@@ -319,7 +315,7 @@ class AlgorithmMenu(tkinter.Frame):
             child_menu.pack()
 
     def __repr__(self) -> str:
-        return f"AlgorithmMenu(name={self.menu_data.name}, value={self.variable.get()}, sub_menus={ {option: repr(menu) for option, menu in self.sub_menus.items()} })"
+        return f"AlgorithmMenu(name={self.menu_data.name}, value={self.variable.get()}, sub_menus={ {option: repr(menu_list) for option, menu_list in self.sub_menus.items()} })"
 
     @property
     def current_sub_options(self) -> dict[str, Option]:
@@ -327,6 +323,8 @@ class AlgorithmMenu(tkinter.Frame):
         The state of the currently chosen options (in the tkinter menus)
         in the children `AlgorithmMenu`'s that SHOULD be spawned when `self`'s
         current option is selected.
+
+        This property DOES NOT return the sub-options of those sub-menus, recursively.
         """
         child_nodes: list[AlgorithmMenu] = self.sub_menus[self.variable.get()]
 
@@ -334,6 +332,22 @@ class AlgorithmMenu(tkinter.Frame):
             child_node.menu_data.name: Option(child_node.variable.get(), child_node.menu_data.allowed_values)
             for child_node in child_nodes
         }
+    
+    def pack(self) -> None:
+        self.label.pack()
+        self.menu.pack()
+
+        current_option_sub_menus: list[AlgorithmMenu] = self.sub_menus[self.variable.get()]
+        for sub_menu in current_option_sub_menus:
+            sub_menu.pack()
+
+    def pack_forget(self) -> None:
+        current_option_sub_menus: list[AlgorithmMenu] = self.sub_menus[self.variable.get()]
+        for sub_menu in current_option_sub_menus:
+            sub_menu.pack_forget()
+
+        self.label.pack_forget()
+        self.menu.pack_forget()
 
     def menu_callback(self, value: object) -> None:
         """
