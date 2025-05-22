@@ -1,5 +1,6 @@
 from algorithms.algorithms import *
 from algorithms.algorithm import Option
+from collections.abc import Iterable
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
 
@@ -470,7 +471,7 @@ class MergeSortInPlace(MergeSort):
 @dataclass
 class RadixSort(Algorithm):
     """Radix Sort"""
-    options: dict[str, Option] = field(default_factory={"base": Option(10, range(2, 1024))}.copy)
+    options: dict[str, Option] = field(default_factory={"base": Option(10, range(2, 1025))}.copy)
 
     def run(self):
         raise NotImplementedError

@@ -253,7 +253,8 @@ class AudioControl(sounddevice.OutputStream):
 class MenuData:
     name: str
     initial_value: object
-    allowed_values: dict[object, list]
+    allowed_values: Iterable
+    value_sub_menus: dict[object, list]
 
 
 # v = tkinter.Variable(self, "Bubble Sort", "sort")
@@ -274,13 +275,25 @@ class AlgorithmMenu:
 
         self.variable = tkinter.Variable(master, menu_data.initial_value, menu_data.name)
         self.label = tkinter.Label(master, text=menu_data.name)
-        self.menu = tkinter.OptionMenu(
-            master,
-            self.variable,
-            self.variable.get(),
-            *menu_data.allowed_values.keys(),
-            command=self.menu_callback,
-        )
+
+        # print(type(menu_data.allowed_values))
+
+        if isinstance(menu_data.allowed_values, range):
+            self.menu = tkinter.Scale(
+                master,
+                variable=self.variable,
+                from_=menu_data.allowed_values.start,
+                to=menu_data.allowed_values.stop - 1,
+                command=lambda value: self.menu_callback(int(value)),
+            )
+        else:
+            self.menu = tkinter.OptionMenu(
+                master,
+                self.variable,
+                self.variable.get(),
+                *menu_data.allowed_values,
+                command=self.menu_callback,
+            )
 
         self.sub_menus: dict[object, list[AlgorithmMenu]] = {}
         """
@@ -299,7 +312,7 @@ class AlgorithmMenu:
             update_info(self.variable.get(), new_sub_options)
 
 
-        for option, option_menu_datas in menu_data.allowed_values.items():
+        for option, option_menu_datas in menu_data.value_sub_menus.items():
             option_algorithm_menus: list[AlgorithmMenu] = []
 
             for option_menu_data in option_menu_datas:
@@ -399,9 +412,15 @@ class SortApp(tkinter.Tk):
                 MenuData(
                     menu_name,
                     chosen_algorithm_name,
+                    algorithm_classes_dict.keys(),
                     {
                         name: [
-                            MenuData(option_name, option_info.value, {value: [] for value in option_info.allowed_values})
+                            MenuData(
+                                option_name,
+                                option_info.value,
+                                option_info.allowed_values,
+                                {value: [] for value in option_info.allowed_values},
+                            )
                             for option_name, option_info in algorithm.options.items()
                         ]
                         for name, algorithm in {
