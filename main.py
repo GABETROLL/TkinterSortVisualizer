@@ -284,6 +284,7 @@ class AlgorithmMenu:
                 variable=self.variable,
                 from_=menu_data.allowed_values.start,
                 to=menu_data.allowed_values.stop - 1,
+                orient="horizontal",
                 command=lambda value: self.menu_callback(int(value)),
             )
         else:
@@ -323,9 +324,6 @@ class AlgorithmMenu:
             self.sub_menus[option] = option_algorithm_menus
 
         # print(self.sub_menus)
-
-        for child_menu in self.sub_menus[menu_data.initial_value]:
-            child_menu.pack()
 
     def __repr__(self) -> str:
         return f"AlgorithmMenu(name={self.menu_data.name}, value={self.variable.get()}, sub_menus={ {option: repr(menu_list) for option, menu_list in self.sub_menus.items()} })"
