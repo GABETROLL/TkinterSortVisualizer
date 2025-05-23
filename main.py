@@ -285,6 +285,7 @@ class AlgorithmMenu:
                 from_=menu_data.allowed_values.start,
                 to=menu_data.allowed_values.stop - 1,
                 orient="horizontal",
+                length=len(menu_data.allowed_values),
                 command=lambda value: self.menu_callback(int(value)),
             )
         else:
@@ -570,9 +571,9 @@ class SortApp(tkinter.Tk):
 
         self.choosing_sort = True
 
-        self.sort_menu_frame.pack()
-        self.input_menu_frame.pack()
-        self.shuffle_menu_frame.pack()
+        self.sort_menu_frame.pack(fill=tkinter.X)
+        self.input_menu_frame.pack(fill=tkinter.X)
+        self.shuffle_menu_frame.pack(fill=tkinter.X)
 
         tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
 
