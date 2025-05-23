@@ -288,6 +288,12 @@ class AlgorithmMenu:
                 length=len(menu_data.allowed_values),
                 command=lambda value: self.menu_callback(int(value)),
             )
+        elif all(isinstance(value, bool) for value in menu_data.allowed_values):
+            self.menu = tkinter.Checkbutton(
+                master,
+                variable=self.variable,
+                command=self.menu_callback,
+            )
         else:
             self.menu = tkinter.OptionMenu(
                 master,
