@@ -1,5 +1,4 @@
 from algorithms.algorithms import *
-from algorithms.algorithm import Option
 from collections.abc import Iterable
 from itertools import count, chain, cycle
 
@@ -162,6 +161,78 @@ class BaiaiSort(Algorithm):
                     self.playground.swap((0, a_index), (0, b_index))
                     # O(1)
                     yield
+
+
+class IterativeCircleSort(Algorithm):
+    """Circle Sort"""
+    def smallest_power_of_2_larger_or_equal_than(self, n: int) -> int:
+        """
+        Returns the smallest power of 2 that's greater or equal to `n`.
+
+        If n < 1, this method throws a ValueError.
+
+        n = 1 is valid, since it's 2^0, so it's a power of 2, and its an integer.
+        However, no integer powers of 2 exist below 1. This method assumes `n`
+        is the length of a sorting array in `self.playground`, and so it shouldn't be
+        lower than 1.
+        """
+        if n < 1:
+            raise ValueError(f"`n` is lower than 1! got: f{n}")
+
+        power: int = 1
+
+        while power < n:
+            power <<= 1
+
+        return power
+    
+    def run(self):
+        starting_circle_length: int = self.smallest_power_of_2_larger_or_equal_than(
+            self.playground.main_array_len,
+        )
+
+        finally_sorted: bool = False
+
+        while not finally_sorted:
+            circle_length: int = starting_circle_length
+
+            while circle_length >= 2:
+                circle_half_length: int = circle_length >> 1
+
+                round_circle_count: int = starting_circle_length // circle_length
+
+                never_swapped: bool = True
+
+                # print(f"{circle_length = } {circle_half_length = } {round_circle_count = }")
+
+                for circle in range(round_circle_count):
+
+                    circle_start_index: int = circle * circle_length
+
+                    # print(f"{circle = } {circle_start_index = }")
+
+                    for a_index, b_index in zip(
+                        range(circle_start_index, circle_start_index + circle_half_length),
+                        range(circle_start_index + circle_length - 1, circle_start_index - 1, -1),
+                    ):
+                        # print(f"{a_index = } {b_index = }")
+
+                        if b_index >= self.playground.main_array_len or a_index >= self.playground.main_array_len:
+                            continue
+
+                        should_swap: bool = self.playground.compare((0, a_index), ">", (0, b_index))
+                        yield
+
+                        if should_swap:
+                            never_swapped = False
+
+                            self.playground.swap((0, a_index), (0, b_index))
+                            yield
+
+                if circle_half_length == 1 and never_swapped:
+                    finally_sorted = True
+
+                circle_length >>= 1
 
 
 class CombSort(Algorithm):
@@ -990,7 +1061,7 @@ class BogoSort(Verify, Shuffle):
 
 
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
-         InsertionSort, BaiaiSort, CombSort, ExchangeSort,
+         InsertionSort, BaiaiSort, IterativeCircleSort, CombSort, ExchangeSort,
          SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
          QuickSort,
          MergeSort, MergeSortInPlace,
