@@ -1,6 +1,6 @@
 from algorithms.algorithms import *
 from algorithms.algorithm import Option
-from collections.abc import Iterable
+from typing import Iterable, Callable
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
 
@@ -111,17 +111,23 @@ class OddEvenSort(Algorithm):
 
 class InsertionSort(Algorithm):
     """Insertion Sort"""
-    def run(self):
-        for unsorted_start_index in range(1, self.playground.main_array_len):
-            index = unsorted_start_index
+    def _run(self, start: int, end: int):
+        for unsorted_start_index in range(start + 1, end):
+            # print(f"{unsorted_start_index = }")
+            index: int = unsorted_start_index
 
-            while 0 < index and self.playground.compare((0, index - 1), ">", (0, index)):
+            while start < index and self.playground.compare((0, index - 1), ">", (0, index)):
                 yield
+
+                # print(f"Needs to swap: {index - 1}, {index}")
 
                 self.playground.swap((0, index - 1), (0, index))
                 yield
 
                 index -= 1
+
+    def run(self):
+        return self._run(0, self.playground.main_array_len)
 
 
 class BinaryInsertionSort(InsertionSort):
@@ -523,31 +529,226 @@ class MergeSort(Algorithm):
         yield
 
 
-class MergeSortInPlace(MergeSort):
+@dataclass
+class MergeSortInPlace(InsertionSort, MergeSort):
     """Merge Sort (In-place: Insertion Sort)"""
+    options: dict[str, Option] = field(default_factory={
+        'algorithm': Option(
+            'Insertion Sort',
+            ('Insertion Sort', 'Weave'),
+        ),
+    }.copy)
+
+    def combine_halves_insertion(self, start: int, midpoint: int, end: int):
+        return InsertionSort._run(self, start, end)
+
+    def slide_to_destination(self, start_index: int, destination_index: int):
+        """
+        Slides the element at index `start_index` in `self.playground.main_array`
+        to `destination_index`, shifting everyting in (start_index, destination_index]
+        by 1 toward the start_index.
+
+        Swaps the element in `start_index` with the next-closest element to `destination_index`
+        in `self.playground.main_array`, until it swaps it with the element AT `destination_index`,
+        then breaks.
+
+        Yields after every swap, including the last one, then stops iteration.
+        """
+        if start_index == destination_index:
+            return
+
+        step: int = -1 if destination_index < start_index else 1
+
+        # print(f"SLIDING TO DESTINATION: {start_index = }, {destination_index = }, {step = }")
+
+        for index in range(start_index, destination_index, step):
+            next_index: int = index + step
+            # In the last iteration, `index` will be destination_index - step,
+            # and `next_index` will be destination_index.
+            # This is because `range` end before `destination_index`, making the last `index`
+            # ***IN THIS CASE*** equal to `destination_index - step`.
+            #
+            # This works nicely, anyways, because the last swap we'll need to slide
+            # an element to its destination is to swap it from the second-to-last
+            # position to `destination_index`.
+
+            # print(f"{index = }, {next_index = }")
+
+            self.playground.swap((0, index), (0, next_index))
+            yield
+
+    def _weave_halves(self, start: int, midpoint: int, end: int):
+        """
+        ASSUMING start < midpoint < end, and `midpoint` IS the midpoint between `start` and `end`,
+        meaning midpoint - start is at most one bigger or smaller than end - midpoint,
+        
+        this method "weaves" all elements in indices [start, midpoint) with elements in
+        [midpoint, end). Slides each element from [midpoint, end) into its corresponding
+        spot, such that every ith element from [midpoint, end) ends up
+        after every ith element in [start, midpoint).
+
+        If there are n elements in [start, midpoint) and m elements in [midpoint, end),
+        and n and m are one apart in the numberline, then these are all the possible
+        cases for weaving, for example:
+
+        n < m, n is odd and m is even:
+        n = 3, m = 4:
+        0 1 2|3 4 5 6
+        n n n m m m m
+        3 -> 1, 4 -> 3, 5 -> 5
+
+        0 3 1 2 4 5 6
+        n m n n m m m
+        0 3 1 4 2 5 6
+        n m n m n m m
+        0 3 1 4 2 5 6
+        n m n m n m m
+
+        n < m, n is even and m is odd:
+        n = 4, m = 5:
+        0 1 2 3|4 5 6 7 8
+        n n n n m m m m m
+        4 -> 1, 5 -> 3, 6 -> 5, 7 -> 7
+
+        0 4 1 2 3 5 6 7 8
+        n m n n n m m m m
+        0 4 1 5 2 3 6 7 8
+        n m n m n n m m m
+        0 4 1 5 2 6 3 7 8
+        n m n m n m n m m
+        0 4 1 5 2 6 3 7 8
+        n m n m n m n m m
+
+        n > m, n is even and m is odd:
+        n = 4, m = 3:
+        0 1 2 3|4 5 6
+        n n n n m m m
+        4 -> 1, 5 -> 3, 6 -> 5
+
+        0 4 1 2 3 5 6
+        n m n n n m m
+        0 4 1 5 2 3 6
+        n m n m n n m
+        0 4 1 5 2 6 3
+        n m n m n m n
+
+        n > m, n is odd and m is even:
+        n = 5, m = 4:
+        0 1 2 3 4|5 6 7 8
+        n n n n n m m m m
+        5 -> 1, 6 -> 3, 7 -> 5, 8 -> 7
+
+        0 5 1 2 3 4 6 7 8
+        n m n n n n m m m
+        0 5 1 6 2 3 4 7 8
+        n m n m n n n m m
+        0 5 1 6 2 7 3 4 8
+        n m n m n m n n m
+        0 5 1 6 2 7 3 8 4
+        n m n m n m n m n
+
+        And if both [start, midpoint) and [midpoint, end) have the same amount of elements,
+        these are all the possible weave cases:
+
+        n == m, n and m are both odd:
+        n = 5, m = 5:
+        0 1 2 3 4|5 6 7 8 9
+        n n n n n m m m m m
+        5 -> 1, 6 -> 3, 7 -> 5, 8 -> 7, 9 -> 9
+
+        0 5 1 2 3 4 6 7 8 9
+        n m n n n n m m m m
+        0 5 1 6 2 3 4 7 8 9
+        n m n m n n n m m m
+        0 5 1 6 2 7 3 4 8 9
+        n m n m n m n n m m
+        0 5 1 6 2 7 3 8 4 9
+        n m n m n m n m n m
+        0 5 1 6 2 7 3 8 4 9
+        n m n m n m n m n m
+
+        n == m, n and m are both even:
+        n = 4, m = 4:
+        0 1 2 3|4 5 6 7
+        n n n n m m m m
+        4 -> 1, 5 -> 3, 6 -> 5, 7 -> 7
+
+        0 4 1 2 3 5 6 7
+        n m n n n m m m
+        0 4 1 5 2 3 6 7
+        n m n m n n m m
+        0 4 1 5 2 6 3 7
+        n m n m n m n m
+        0 4 1 5 2 6 3 7
+        n m n m n m n m
+
+        IMPORTANT: This should work for ALL section lengths. If you spot any bugs in this algorithm,
+        or any algorithm in here, please let me know! I'd be glad to fix it!
+        Although, since this step is followed by insertion sort, it may not even matter much
+        if this method has a few inaccuracies, since the insertion sort step takes care of them.
+        """
+        # print(f"WEAVING HALVES: {start = }, {midpoint = }, {end = }")
+        for start_index, destination_index in zip(
+            range(midpoint, end),
+            range(start + 1, end, 2),
+        ):
+            # print(f"{start_index} -> {destination_index}")
+            for _ in self.slide_to_destination(start_index, destination_index):
+                yield
+
+    def combine_halves_weave(self, start: int, midpoint: int, end: int):
+        """
+        Weaves the elements in indices [start, midpoint)
+        with the elements in indices [midpoint, end),
+        inside of `self.playground.main_array`, by using `self._weave_halves`;
+        then runs insertion sort in [start, end)
+        to finish combining (mergin) the two halves,
+        by using `InsertionSort._run(self, start, end)`.
+        """
+        # print(f"COMBINING HALVES: {start = }, {midpoint = }, {end = } (WEAVE)")
+
+        for _ in self._weave_halves(start, midpoint, end):
+            yield
+
+        # print(f"INSERTIONING HALVES")
+
+        for _ in InsertionSort._run(self, start, end):
+            yield
+
+    @property
+    def combine_halves_method(self) -> Callable[[int, int, int], object]:
+        methods = {
+            "Insertion Sort": self.combine_halves_insertion,
+            "Weave": self.combine_halves_weave,
+        }
+
+        return methods[self.options["algorithm"].value]
+
     def in_place(self, start, end):
+        """
+        Runs itself in [start, midpoint) and [midpoint, end),
+        then combines the two halves using `self.combine_halves_method`.
+
+        If the length of the section [start, end) (end - start)
+        is smaller or equal to 1, this method doesn't do anything.
+        This means that if start - end == 2, the recursive `self.in_place` calls
+        for the two smaller halves should have length 1, won't do anything,
+        and this method call will then combine the two halves of length one
+        by calling `self.combine_halves_method(start, midpoint, end)`.
+        """
+        # print(start, end)
         section_length = end - start
 
         if section_length > 1:
-            midpoint = start + section_length // 2
+            midpoint = start + section_length >> 1
 
             for _ in self.in_place(start, midpoint):
                 yield
             for _ in self.in_place(midpoint, end):
                 yield
 
-            for merge_index in range(midpoint, end):
-
-                for insert_index in range(merge_index, start, -1):
-                    a, b = (0, insert_index - 1), (0, insert_index)
-
-                    should_insert = self.playground.compare(a, ">", b)
-                    yield
-
-                    if should_insert:
-                        self.playground.swap(a, b)
-                        continue
-                    break
+            for _ in self.combine_halves_method(start, midpoint, end):
+                yield
 
     def run(self):
         for _ in self.in_place(0, self.playground.main_array_len):
@@ -801,6 +1002,8 @@ class GravitySort(Algorithm):
 
 class Concurrent(Algorithm):
     """Concurrent Sorts"""
+    options: dict[str, Option] = field(default_factory={"run in parallel": False}.copy)
+
     def run(self):
         raise NotImplementedError
 
@@ -1008,6 +1211,25 @@ class IterativeOddEvenMergesort(OddEvenMergesort):
 
                 comb_distance //= 2
             amount *= 2
+
+
+class ParallelOddEvenMergeSort(Concurrent):
+    """Parallel Odd Even Merge Sort"""
+    def run(self):
+        merge_len: int = 1
+
+        while merge_len <= self.playground.main_array_len:
+            section_len: int = merge_len << 1
+
+            parallel_len: int = section_len
+
+            comb_len: int = merge_len
+            while comb_len >= 2:
+                for section_start_index in range(0, self.playground.main_array_len, section_len):
+                    pass
+                comb_len >>= 1
+                parallel_len >>= 1
+            merge_len <<= 1                
 
 
 class SlowSort(Algorithm):
