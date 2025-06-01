@@ -170,7 +170,7 @@ class BaiaiSort(Algorithm):
                     yield
 
 
-class IterativeCircleSort(Algorithm):
+class CircleSort(Algorithm):
     """Circle Sort"""
     def smallest_power_of_2_larger_or_equal_than(self, n: int) -> int:
         """
@@ -192,7 +192,93 @@ class IterativeCircleSort(Algorithm):
             power <<= 1
 
         return power
-    
+
+    def recursive_iteration(self, start: int, circle_length: int):
+        """
+        Runs a recursive circle sort iteration on the section of the main array
+        at `self.playground.main_array_len` in the indices [start, start + circle_length).
+
+        This means this method first compares each next element
+        from the start of the left side of the circle (from `start` to start + circle_length >> 1 - 1)
+        with each corresponding next element from the end of the circle.
+        Then, this method calls itself in both the left and right sides
+        of the circle: left -> [start, start + circle_len >> 1), right -> [start + circle_len >> 1, end) 
+        """
+        if circle_length == 1:
+            return
+
+        circle_half_length: int = circle_length >> 1
+
+        for left_index, right_index in zip(
+            range(start, start + circle_half_length),
+            range(start + circle_length - 1, start + circle_half_length - 1, -1),
+        ):
+            # The length of the circle (parameter `circle_len`)
+            # could be larger than the list itself,
+            # which means the conditional flip may need to be skipped.
+            #
+            # I believe you should be able to skip the flip
+            # if the circle goes outise the length of the list,
+            # and the algorithm should still work fine.
+            if right_index >= self.playground.main_array_len:
+                continue
+
+            should_swap: bool = self.playground.compare((0, left_index), ">", (0, right_index))
+            yield
+
+            if should_swap:
+                self.playground.swap((0, left_index), (0, right_index))
+                yield
+
+                if circle_length == 2:
+                    self.never_swapped_with_circle_length_2 = False
+
+        for _ in chain(
+            self.recursive_iteration(start, circle_half_length),
+            self.recursive_iteration(start + circle_half_length, circle_half_length),
+        ):
+            yield
+
+    def run(self):
+        """
+        Repetedly runs iterations of Recursive Circle Sort,
+        by calling `self.recursive_iteration` with start=0 and circle_length
+        = to the smallest power of 2 larger or equal to the playground's
+        main array's length.
+
+        This method initializes `self.never_swapped_with_circle_length_2` to be true
+        when called, and does so again before each iteration
+        (where this method calls `self.recursive_iteration`).
+        Then, after the call is over, this method checks
+        `self.never_swapped_with_circle_length_2`, to see if the method
+        never had to swap any elements in the array when the length of
+        each circle was 2. if this variable is true, the algorithm should(?)
+        be over.
+
+        `recursive_iteration` is responsible for remotely turning this variable
+        false whenever its `circle_length` parameter is 2 and it had to swap
+        its two halves (which, at that length, should just be 2 pieces,
+        one in each half of the circle). This means the algorithm may not be over yet,
+        and so this method runs another iteration of `self.recursive_iteration`.
+        """
+        starting_circle_length: int = self.smallest_power_of_2_larger_or_equal_than(
+            self.playground.main_array_len,
+        )
+
+        self.never_swapped_with_circle_length_2: bool = True
+
+        while True:
+            self.never_swapped_with_circle_length_2 = True
+
+            for _ in self.recursive_iteration(0, starting_circle_length):
+                yield
+
+            if self.never_swapped_with_circle_length_2:
+                break
+
+
+class IterativeCircleSort(CircleSort):
+    """Iterative Circle Sort"""
     def run(self):
         starting_circle_length: int = self.smallest_power_of_2_larger_or_equal_than(
             self.playground.main_array_len,
@@ -1287,7 +1373,7 @@ class BogoSort(Verify, Shuffle):
 
 
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
-         InsertionSort, BaiaiSort, IterativeCircleSort, CombSort, ExchangeSort,
+         InsertionSort, BaiaiSort, CircleSort, IterativeCircleSort, CombSort, ExchangeSort,
          SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
          QuickSort,
          MergeSort, MergeSortInPlace,
