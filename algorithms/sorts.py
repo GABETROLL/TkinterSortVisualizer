@@ -822,13 +822,13 @@ class MergeSortInPlace(InsertionSort, MergeSort):
         and this method call will then combine the two halves of length one
         by calling `self.combine_halves_method(start, midpoint, end)`.
         """
-        print(f"{start = }, {end = }")
+        # print(f"{start = }, {end = }")
         section_length: int = end - start
 
         if section_length > 1:
             midpoint: int = start + (section_length >> 1)
 
-            print(f"{section_length = }, {section_length >> 1}, {midpoint = }")
+            # print(f"{section_length = }, {section_length >> 1}, {midpoint = }")
 
             for _ in self.in_place(start, midpoint):
                 yield
