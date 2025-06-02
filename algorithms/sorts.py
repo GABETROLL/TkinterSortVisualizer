@@ -199,10 +199,10 @@ class CircleSort(Algorithm):
         at `self.playground.main_array_len` in the indices [start, start + circle_length).
 
         This means this method first compares each next element
-        from the start of the left side of the circle (from `start` to start + circle_length >> 1 - 1)
+        from the start of the left side of the circle (from `start` to start + (circle_length >> 1) - 1)
         with each corresponding next element from the end of the circle.
         Then, this method calls itself in both the left and right sides
-        of the circle: left -> [start, start + circle_len >> 1), right -> [start + circle_len >> 1, end) 
+        of the circle: left -> [start, start + (circle_len >> 1)), right -> [start + (circle_len >> 1), end) 
         """
         if circle_length == 1:
             return
@@ -810,7 +810,7 @@ class MergeSortInPlace(InsertionSort, MergeSort):
 
         return methods[self.options["algorithm"].value]
 
-    def in_place(self, start, end):
+    def in_place(self, start: int, end: int):
         """
         Runs itself in [start, midpoint) and [midpoint, end),
         then combines the two halves using `self.combine_halves_method`.
@@ -822,11 +822,13 @@ class MergeSortInPlace(InsertionSort, MergeSort):
         and this method call will then combine the two halves of length one
         by calling `self.combine_halves_method(start, midpoint, end)`.
         """
-        # print(start, end)
-        section_length = end - start
+        print(f"{start = }, {end = }")
+        section_length: int = end - start
 
         if section_length > 1:
-            midpoint = start + section_length >> 1
+            midpoint: int = start + (section_length >> 1)
+
+            print(f"{section_length = }, {section_length >> 1}, {midpoint = }")
 
             for _ in self.in_place(start, midpoint):
                 yield
