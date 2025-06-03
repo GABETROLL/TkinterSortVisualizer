@@ -1093,7 +1093,10 @@ class GravitySort(Algorithm):
 
 class Concurrent(Algorithm):
     """Concurrent Sorts"""
-    options: dict[str, Option] = field(default_factory={"run in parallel": False}.copy)
+    options: dict[str, Option] = field(default_factory={"run in parallel": Option(False, (False, True))}.copy)
+
+    def run_iteratively(self, coroutines: Iterable[Generator[None, None, None]]) -> Generator[None, None, None]:
+        return chain(coroutines)
 
     def run_in_parallel(self, coroutines: Iterable[Generator[None, None, None]]) -> Generator[None, None, None]:
         while True:
@@ -1108,6 +1111,11 @@ class Concurrent(Algorithm):
 
             if all_coroutines_finished:
                 break
+    
+    def run_coroutines(self, coroutines: Iterable[Generator[None, None, None]]) -> Generator[None, None, None]:
+        if self.options["run in parallel"].value:
+            return self.run_in_parallel(coroutines)
+        return self.run_iteratively(coroutines)
 
     def run(self):
         raise NotImplementedError
@@ -1318,14 +1326,17 @@ class IterativeOddEvenMergesort(OddEvenMergesort):
             amount *= 2
 
 
+@dataclass
 class ParallelOddEvenMergesort(Concurrent):
     """Parallel Odd Even Mergesort"""
-    def merge(self, start: int, merge_len: int) -> Generator[None, None, None]:
-        section_len: int = merge_len << 1
+    options: dict[str, Option] = field(default_factory={"run in parallel": Option(True, (True, False))}.copy)
 
-        comb_len: int = merge_len
+    def merge(self, start: int, halves_len: int) -> Generator[None, None, None]:
+        merged_halves_len: int = halves_len << 1
+
+        comb_len: int = halves_len
         while comb_len >= 1:
-            for a_index in range(start, start + section_len - comb_len):
+            for a_index in range(start, start + merged_halves_len - comb_len):
                 b_index: int = a_index + comb_len
 
                 if (
@@ -1344,24 +1355,25 @@ class ParallelOddEvenMergesort(Concurrent):
             comb_len >>= 1
 
     def run(self) -> Generator[None, None, None]:
-        merge_len: int = 1
+        halves_len: int = 1
         max_section_len: int = smallest_power_of_2_larger_or_equal_than(
             self.playground.main_array_len,
         )
-        max_merge_len: int = max_section_len >> 1
+        max_halves_len: int = max_section_len >> 1
 
-        while merge_len <= max_merge_len:
-            section_len: int = merge_len << 1
+        while halves_len <= max_halves_len:
+            merged_halves_len: int = halves_len << 1
 
-            for _ in self.run_in_parallel(
+            for _ in self.run_coroutines(
                 coroutines=[
-                    self.merge(start, merge_len)
-                    for start in range(0, self.playground.main_array_len, section_len)
+                    self.merge(start, halves_len)
+                    for start in range(0, self.playground.main_array_len, merged_halves_len)
                 ],
             ):
                 yield
 
-            merge_len <<= 1
+            halves_len <<= 1
+
 
 class SlowSort(Algorithm):
     """Slow Sort"""
