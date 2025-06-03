@@ -1,8 +1,31 @@
 from algorithms.algorithms import *
 from algorithms.algorithm import Option
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Generator
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
+
+
+def smallest_power_of_2_larger_or_equal_than(n: int) -> int:
+    """
+    Returns the smallest power of 2 that's greater or equal to `n`.
+
+    If n < 1, this method throws a ValueError.
+
+    n = 1 is valid, since it's 2^0, so it's a power of 2, and its an integer.
+    However, no integer powers of 2 exist below 1. This method assumes `n`
+    is the length of a sorting array in `self.playground`, and so it shouldn't be
+    lower than 1.
+    """
+    if n < 1:
+        raise ValueError(f"`n` is lower than 1! got: f{n}")
+
+    power: int = 1
+
+    while power < n:
+        power <<= 1
+
+    return power
+
 
 class BubbleSort(Algorithm):
     """Bubble Sort"""
@@ -114,17 +137,18 @@ class InsertionSort(Algorithm):
     def _run(self, start: int, end: int):
         for unsorted_start_index in range(start + 1, end):
             # print(f"{unsorted_start_index = }")
-            index: int = unsorted_start_index
 
-            while start < index and self.playground.compare((0, index - 1), ">", (0, index)):
+            for index in range(unsorted_start_index, start, -1):
+                should_swap: bool = self.playground.compare((0, index - 1), ">", (0, index))
                 yield
+
+                if not should_swap:
+                    break
 
                 # print(f"Needs to swap: {index - 1}, {index}")
 
                 self.playground.swap((0, index - 1), (0, index))
                 yield
-
-                index -= 1
 
     def run(self):
         return self._run(0, self.playground.main_array_len)
@@ -172,27 +196,6 @@ class BaiaiSort(Algorithm):
 
 class CircleSort(Algorithm):
     """Circle Sort"""
-    def smallest_power_of_2_larger_or_equal_than(self, n: int) -> int:
-        """
-        Returns the smallest power of 2 that's greater or equal to `n`.
-
-        If n < 1, this method throws a ValueError.
-
-        n = 1 is valid, since it's 2^0, so it's a power of 2, and its an integer.
-        However, no integer powers of 2 exist below 1. This method assumes `n`
-        is the length of a sorting array in `self.playground`, and so it shouldn't be
-        lower than 1.
-        """
-        if n < 1:
-            raise ValueError(f"`n` is lower than 1! got: f{n}")
-
-        power: int = 1
-
-        while power < n:
-            power <<= 1
-
-        return power
-
     def recursive_iteration(self, start: int, circle_length: int):
         """
         Runs a recursive circle sort iteration on the section of the main array
@@ -261,7 +264,7 @@ class CircleSort(Algorithm):
         one in each half of the circle). This means the algorithm may not be over yet,
         and so this method runs another iteration of `self.recursive_iteration`.
         """
-        starting_circle_length: int = self.smallest_power_of_2_larger_or_equal_than(
+        starting_circle_length: int = smallest_power_of_2_larger_or_equal_than(
             self.playground.main_array_len,
         )
 
@@ -280,7 +283,7 @@ class CircleSort(Algorithm):
 class IterativeCircleSort(CircleSort):
     """Iterative Circle Sort"""
     def run(self):
-        starting_circle_length: int = self.smallest_power_of_2_larger_or_equal_than(
+        starting_circle_length: int = smallest_power_of_2_larger_or_equal_than(
             self.playground.main_array_len,
         )
 
@@ -1092,6 +1095,20 @@ class Concurrent(Algorithm):
     """Concurrent Sorts"""
     options: dict[str, Option] = field(default_factory={"run in parallel": False}.copy)
 
+    def run_in_parallel(self, coroutines: Iterable[Generator[None, None, None]]) -> Generator[None, None, None]:
+        while True:
+            all_coroutines_finished: bool = True
+            for coroutine in coroutines:
+                try:
+                    yield next(coroutine)
+                except StopIteration:
+                    pass
+                else:
+                    all_coroutines_finished = False
+
+            if all_coroutines_finished:
+                break
+
     def run(self):
         raise NotImplementedError
 
@@ -1301,24 +1318,50 @@ class IterativeOddEvenMergesort(OddEvenMergesort):
             amount *= 2
 
 
-class ParallelOddEvenMergeSort(Concurrent):
-    """Parallel Odd Even Merge Sort"""
-    def run(self):
-        merge_len: int = 1
+class ParallelOddEvenMergesort(Concurrent):
+    """Parallel Odd Even Mergesort"""
+    def merge(self, start: int, merge_len: int) -> Generator[None, None, None]:
+        section_len: int = merge_len << 1
 
-        while merge_len <= self.playground.main_array_len:
+        comb_len: int = merge_len
+        while comb_len >= 1:
+            for a_index in range(start, start + section_len - comb_len):
+                b_index: int = a_index + comb_len
+
+                if (
+                    b_index not in range(self.playground.main_array_len)
+                    or a_index not in range(self.playground.main_array_len)
+                ):
+                    continue
+
+                should_swap: bool = self.playground.compare((0, a_index), ">", (0, b_index))
+                yield
+
+                if should_swap:
+                    self.playground.swap((0, a_index), (0, b_index))
+                    yield
+
+            comb_len >>= 1
+
+    def run(self) -> Generator[None, None, None]:
+        merge_len: int = 1
+        max_section_len: int = smallest_power_of_2_larger_or_equal_than(
+            self.playground.main_array_len,
+        )
+        max_merge_len: int = max_section_len >> 1
+
+        while merge_len <= max_merge_len:
             section_len: int = merge_len << 1
 
-            parallel_len: int = section_len
+            for _ in self.run_in_parallel(
+                coroutines=[
+                    self.merge(start, merge_len)
+                    for start in range(0, self.playground.main_array_len, section_len)
+                ],
+            ):
+                yield
 
-            comb_len: int = merge_len
-            while comb_len >= 2:
-                for section_start_index in range(0, self.playground.main_array_len, section_len):
-                    pass
-                comb_len >>= 1
-                parallel_len >>= 1
-            merge_len <<= 1                
-
+            merge_len <<= 1
 
 class SlowSort(Algorithm):
     """Slow Sort"""
@@ -1381,5 +1424,5 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
          BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
-         OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
+         OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort, ParallelOddEvenMergesort,
          SlowSort, BogoSort]
