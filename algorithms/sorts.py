@@ -1088,6 +1088,270 @@ class GravitySort(Algorithm):
                 yield
 
 
+class SquareRootSort(Algorithm):
+    """Square Root Sort"""
+    def swap_sections(self, a_start: int, b_start: int, len: int):
+        """
+        Swaps the two sections of the array: [a_start, a_start + len)
+        and [b_start, b_start + len).
+        
+        Swaps every ith element in the "a section" with every ith element
+        in the "b section".
+
+        **ASSUMING THE TWO SECTIONS DON'T OVERLAP. IF THEY OVERLAP,
+        WEIRD BEHAVIOR COULD OCCUR.
+        """
+        for relative_index in range(len):
+            a_index: int = a_start + relative_index
+            b_index: int = b_start + relative_index
+
+            self.playground.swap((0, a_index), (0, b_index))
+            yield
+    
+    def roll(self, section: range, lowest_in_section: int, destination: int):
+        """
+        Rolls the section in `self.playground.main_array` represented by `section`
+        from where it currently is to `destination`.
+
+        `section` is the range of indices of all the elements in the section in
+        `self.playground.main_array` to roll.
+        This method asserts that `section` doesn't contain any indices outside
+        of the range of `self.playground.main_array`'s range of indices.
+
+        `lowest_in_section` should be the index of the element
+        in the section with lowest value (or the one that goes first amongst
+        the rest of the elements in the section).
+        This method asserts that the index `lowest_in_section` is in the `section` range.
+        ***THIS METHOD DOES NOT CHECK IF THE ELEMENT IN `lowest_in_section`
+        IS ACTUALLY THE LOWEST IN THE SECTION.
+
+        Example:
+        ********01234****************
+                           ^
+        *********12340***************
+                           ^
+        **********23401**************
+                           ^
+        ***********34012*************
+                           ^
+        ************40123************
+                           ^
+        *************01234***********
+                           ^
+        **************12340**********
+                           ^
+        ***************23401*********
+                           ^
+        ****************34012********
+                           ^
+        *****************40123*******
+                           ^
+        ******************01234******
+                           ^
+        *******************12340*****
+                           ^
+        """
+        for current_section_start_index in range(section.start, destination):
+            self.playground.swap(
+                (0, current_section_start_index),
+                (0, current_section_start_index + len(section))
+            )
+            yield
+
+    def old_merge_roll_and_drop(self, start: int, a_len: int, b_len: int):
+        """
+        Since all a_len items in the a-section, in the worst case scenario,
+        need to roll from before the b-section to after the b-section,
+        and each "roll swap" moves one element from the b-section
+        from in front of the a-section to behind it,
+        thie method's time complexity would be in O(b_len).
+
+        However, copying the sorted a-section from the aux array
+        each time an element is dropped is, in the worst case scenario,
+        O(a_len). Dropping an element is just moving the a-section
+        range's start index by one, so it's in O(1). Since there are
+        a_len elements in the a-section to drop in total, in the worst-case
+        scenario, the number of drops to make is also in O(a_len).
+
+        Since for each of the O(b_len) rolls, an O(a_len) aux array copy
+        needs to be made, the total time complexity for this method would be
+        O(b_len + a_len * a_len)
+
+        A < 0 <= B
+
+         012345**AB**** 012345
+        |^     |        ^
+         *123450*AB**** 012345
+         |     ^|       ^
+         **234501AB**** 012345
+          |    ^ |      ^
+         **A345012B**** 012345
+           |   ^n |     ^
+         **A045012B**** 012345
+           |   ^n |     ^
+         **A015012B**** 012345
+           |   ^n |     ^
+         **A012012B**** 012345
+           |   ^n |     ^
+         **A012312B**** 012345
+           |   ^n |     ^
+         **A012342B**** 012345
+           |   ^n |     ^
+         **A012345B**** 012345
+           |   ^n |     ^
+         **A012345B**** 012345
+           |^n    |     ^
+         **A012345B**** 012345
+            |^    |      ^
+         ***012345**AB* 012345
+            |^    |      ^
+         ***0*23451*AB* 012345
+             |    ^|     ^
+         ***0**34512AB* 012345
+              |   ^ |    ^
+         ***0**A45123B* 012345
+               |  ^  |   ^
+         ***0**A12345B* 012345
+               |^n   |   ^
+         ***0***12345** 012345
+                |^   |    ^
+        """
+        AUX_ARRAY_INDEX = 1
+
+        end_index: int = start + a_len + b_len
+
+        print(f"{end_index = }")
+
+        if end_index > self.playground.main_array_len:
+            raise ValueError(f"""the range of the two halves to merge \
+exceeds the length of the main array:
+({start = }) + ({a_len = }) + ({b_len = }) = {end_index} > {self.playground.main_array_len}""")
+
+        # Copy the nums from the a section to an auxiliary array.
+        #
+        # Since I'm assuming that `a_len` will be in O(sqrt(main_array_len)),
+        # then this algorithm will have space complexity O(sqrt(n)),
+        # where n is the number of elements to sort.
+        self.playground.spawn_new_array(a_len)
+        yield
+        for _ in self.playground.copy_array_slice(
+            input_array_index=0, input_start_index=start,
+            output_array_index=AUX_ARRAY_INDEX, output_start_index=0,
+            len=a_len,
+        ):
+            yield
+
+        current_section_range: range = range(start, start + a_len)
+        index_of_current_lowest: int = start
+        # ASSUMES THAT `start` CONTAINS THE LOWEST NUMBER IN THE A SECTION,
+        # AND THAT THE A SECTION IS ALREADY SORTED
+        # WHEN THIS METHOD IS CALLED.
+
+        aux_start_index: int = 0
+
+        while len(current_section_range) > 0:
+            index_to_compare: int = current_section_range.stop
+
+            print(f"{current_section_range = }, {index_of_current_lowest = }, {aux_start_index = } {index_to_compare = }")
+
+            if index_to_compare > self.playground.main_array_len:
+                raise ValueError(f"""The index to compare is somehow \
+larger than the length of the main array: {index_to_compare}.
+How did this happen?""")
+            
+            if index_to_compare > end_index:
+                raise ValueError(f"""The index to compare is somehow \
+larger than the end index of the two halves to merge: {index_to_compare}.
+How did this happen?""")
+
+            if index_to_compare == end_index:
+                # There are no more elements to compare with the lowest element
+                # in the a-section slice. This means that every element in the array
+                # was strictly lesser than the lowest number of the a section,
+                # and means that all the numbers in the slice belong at the end of the array,
+                # where they currently are! So, this algorithm is over,
+                # even though we didn't drop all the numbers in the section yet.
+                # We can just drop them all right here, right now.
+                #
+                # BUT FIRST, they may not be in order yet, so we need to copy them
+                # from the aux array.
+
+                for _ in self.playground.copy_array_slice(
+                    AUX_ARRAY_INDEX, aux_start_index,
+                    0, current_section_range.start,
+                    len(current_section_range),
+                ):
+                    yield
+
+                break
+
+            should_drop: bool = self.playground.compare(
+                (0, index_of_current_lowest),
+                "<=",
+                (0, index_to_compare),
+            )
+            yield
+
+            if should_drop:
+                for _ in self.playground.copy_array_slice(
+                    AUX_ARRAY_INDEX, aux_start_index,
+                    0, current_section_range.start,
+                    len(current_section_range),
+                ):
+                    yield
+
+                new_start: int = current_section_range.start + 1
+
+                index_of_current_lowest = new_start
+                # SINCE WE ARE ASSUMING THAT the a section was already sorted
+                # before it was provided to this method, and we copied the
+                # **SORTED** aux array to the main array at the current slice range,
+                # then the current slice should also be sorted,
+                # and therefore the NEW lowest number in the slice
+                # should be the next number, at `current_section_range.start + 1`.
+
+                # Drop the CURRENT lowest number:
+                current_section_range = range(
+                    new_start,
+                    current_section_range.stop,
+                )
+                aux_start_index += 1
+            else:
+                self.playground.swap((0, current_section_range.start), (0, current_section_range.stop))
+                yield
+
+                current_section_range = range(
+                    current_section_range.start + 1,
+                    current_section_range.stop + 1,
+                )
+
+        self.playground.delete_array(AUX_ARRAY_INDEX)
+        yield
+
+    def merge_halves(self, start: int, a_len: int, b_len: int):
+        return self.old_merge_roll_and_drop(start, a_len, b_len)
+
+    def run(self):
+        """merge_len: int = 2
+
+        while merge_len <= self.playground.main_array_len:
+            halves_len: int = merge_len >> 1
+
+            for merge_start_index in range(0, self.playground.main_array_len, merge_len):
+
+                print(f"{merge_start_index = } {merge_len = } {halves_len = }")
+
+                for _ in self.merge_halves(merge_start_index, halves_len, halves_len):
+                    yield
+
+            merge_len <<= 1"""
+        
+        a_len: int = self.playground.main_array_len >> 1
+        b_len: int = self.playground.main_array_len - a_len
+        for _ in self.merge_halves(0, a_len, b_len):
+            yield
+
+
 class Concurrent(Algorithm):
     """Concurrent Sorts"""
     options: dict[str, Option] = field(default_factory={"run in parallel": False}.copy)
@@ -1380,6 +1644,7 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          QuickSort,
          MergeSort, MergeSortInPlace,
          RadixLSDSort, RadixLSDSortInPlace, PigeonholeSort, CountSort, GravitySort,
+         SquareRootSort,
          BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
          OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
          SlowSort, BogoSort]
