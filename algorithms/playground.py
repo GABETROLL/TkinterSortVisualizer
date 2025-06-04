@@ -56,6 +56,24 @@ class SortPlayground:
             self.write(num, (output_array_index, index))
             yield
 
+    def copy_array_slice(
+        self,
+        input_array_index: int,
+        input_start_index: int,
+        output_array_index: int,
+        output_start_index: int,
+        len: int,
+    ):
+        for input_num_index, output_num_index in zip(
+            range(input_start_index, input_start_index + len),
+            range(output_start_index, output_start_index + len),
+        ):
+            num: int = self.read((input_array_index, input_num_index))
+            yield
+
+            self.write(num, (output_array_index, output_num_index))
+            yield
+
     def delete_array(self, index: int):
         self.arrays.pop(index)
 
