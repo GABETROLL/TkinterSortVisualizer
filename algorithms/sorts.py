@@ -1090,6 +1090,8 @@ class GravitySort(Algorithm):
 
 class SquareRootSort(Algorithm):
     """Square Root Sort"""
+    AUX_ARRAY_INDEX = 1
+
     def swap_sections(self, a_start: int, b_start: int, len: int):
         """
         Swaps the two sections of the array: [a_start, a_start + len)
@@ -1177,47 +1179,125 @@ class SquareRootSort(Algorithm):
         needs to be made, the total time complexity for this method would be
         O(b_len + a_len * a_len)
 
+        a_len = 6
+        b_len = 8
+        
         A < 0 <= B
 
          012345**AB**** 012345
-        |^     |        ^
+        |      |        ^
+        roll (1):
          *123450*AB**** 012345
-         |     ^|       ^
+         |      |       ^
+        roll (2):
          **234501AB**** 012345
-          |    ^ |      ^
+          |      |      ^
+        roll (3):
          **A345012B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (1):
          **A045012B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (2):
          **A015012B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (3):
          **A012012B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (4):
          **A012312B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (5):
          **A012342B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        copy (6):
          **A012345B**** 012345
-           |   ^n |     ^
+           |      |     ^
+        drop (1):
          **A012345B**** 012345
-           |^n    |     ^
-         **A012345B**** 012345
-            |^    |      ^
+            |     |      ^
+        next position (this isn't binary search, it's just an illustration):
          ***012345**AB* 012345
-            |^    |      ^
+            |     |      ^
+        roll (4):
          ***0*23451*AB* 012345
-             |    ^|     ^
+             |     |     ^
+        roll (5):
          ***0**34512AB* 012345
-              |   ^ |    ^
+              |     |    ^
+        roll (6):
          ***0**A45123B* 012345
-               |  ^  |   ^
+               |     |   ^
+        copy (7):
+         ***0**A15123B* 012345
+               |     |   ^
+        copy (8):
+         ***0**A12123B* 012345
+               |     |   ^
+        copy (9):
+         ***0**A12323B* 012345
+               |     |   ^
+        copy (10):
+         ***0**A12343B* 012345
+               |     |   ^
+        copy (11):
          ***0**A12345B* 012345
-               |^n   |   ^
-         ***0***12345** 012345
-                |^   |    ^
+               |     |   ^
+        drop (2):
+         ***0**A12345B* 012345
+                |    |    ^
+        next position:
+         ***0***12345*A 012345
+                |    |    ^
+        roll (7):
+         ***0***1*3452A 012345
+                 |    |   ^
+        roll (8 == b_len):
+         ***0***1*A4523 012345
+                  |    |  ^
+        copy (12):
+         ***0***1*A2523 012345
+                  |    |  ^
+        copy (13):
+         ***0***1*A2323 012345
+                  |    |  ^
+        copy (14):
+         ***0***1*A2343 012345
+                  |    |  ^
+        copy (15):
+         ***0***1*A2345 012345
+                  |    |  ^
+        drop (3):
+         ***0***1*A2345 012345
+                   |   |   ^
+        copy (16):
+         ***0***1*A2345 012345
+                   |   |   ^
+        copy (17):
+         ***0***1*A2345 012345
+                   |   |   ^
+        copy (18):
+         ***0***1*A2345 012345
+                   |   |   ^
+        drop (4):
+         ***0***1*A2345 012345
+                    |  |    ^
+        copy (19):
+         ***0***1*A2345 012345
+                    |  |    ^
+        copy (20):
+         ***0***1*A2345 012345
+                    |  |    ^
+        drop (5):
+         ***0***1*A2345 012345
+                     | |     ^
+        copy (21):
+         ***0***1*A2345 012345
+                     | |     ^
+        drop (6 == a_len):
+         ***0***1*A2345 012345
+                      ||      ^ 
         """
-        AUX_ARRAY_INDEX = 1
-
         end_index: int = start + a_len + b_len
 
         print(f"{end_index = }")
@@ -1232,27 +1312,20 @@ exceeds the length of the main array:
         # Since I'm assuming that `a_len` will be in O(sqrt(main_array_len)),
         # then this algorithm will have space complexity O(sqrt(n)),
         # where n is the number of elements to sort.
-        self.playground.spawn_new_array(a_len)
-        yield
         for _ in self.playground.copy_array_slice(
             input_array_index=0, input_start_index=start,
-            output_array_index=AUX_ARRAY_INDEX, output_start_index=0,
+            output_array_index=self.AUX_ARRAY_INDEX, output_start_index=0,
             len=a_len,
         ):
             yield
 
         current_section_range: range = range(start, start + a_len)
-        index_of_current_lowest: int = start
-        # ASSUMES THAT `start` CONTAINS THE LOWEST NUMBER IN THE A SECTION,
-        # AND THAT THE A SECTION IS ALREADY SORTED
-        # WHEN THIS METHOD IS CALLED.
-
         aux_start_index: int = 0
 
         while len(current_section_range) > 0:
             index_to_compare: int = current_section_range.stop
 
-            print(f"{current_section_range = }, {index_of_current_lowest = }, {aux_start_index = } {index_to_compare = }")
+            print(f"{current_section_range = }, {aux_start_index = } {index_to_compare = }")
 
             if index_to_compare > self.playground.main_array_len:
                 raise ValueError(f"""The index to compare is somehow \
@@ -1277,7 +1350,7 @@ How did this happen?""")
                 # from the aux array.
 
                 for _ in self.playground.copy_array_slice(
-                    AUX_ARRAY_INDEX, aux_start_index,
+                    self.AUX_ARRAY_INDEX, aux_start_index,
                     0, current_section_range.start,
                     len(current_section_range),
                 ):
@@ -1286,37 +1359,33 @@ How did this happen?""")
                 break
 
             should_drop: bool = self.playground.compare(
-                (0, index_of_current_lowest),
+                (self.AUX_ARRAY_INDEX, aux_start_index),
                 "<=",
                 (0, index_to_compare),
             )
             yield
 
             if should_drop:
+                # copy
                 for _ in self.playground.copy_array_slice(
-                    AUX_ARRAY_INDEX, aux_start_index,
+                    self.AUX_ARRAY_INDEX, aux_start_index,
                     0, current_section_range.start,
                     len(current_section_range),
                 ):
                     yield
 
+                # move the indices
                 new_start: int = current_section_range.start + 1
-
-                index_of_current_lowest = new_start
-                # SINCE WE ARE ASSUMING THAT the a section was already sorted
-                # before it was provided to this method, and we copied the
-                # **SORTED** aux array to the main array at the current slice range,
-                # then the current slice should also be sorted,
-                # and therefore the NEW lowest number in the slice
-                # should be the next number, at `current_section_range.start + 1`.
 
                 # Drop the CURRENT lowest number:
                 current_section_range = range(
                     new_start,
                     current_section_range.stop,
                 )
+                # move the index of the lowest 
                 aux_start_index += 1
             else:
+                # roll
                 self.playground.swap((0, current_section_range.start), (0, current_section_range.stop))
                 yield
 
@@ -1325,17 +1394,16 @@ How did this happen?""")
                     current_section_range.stop + 1,
                 )
 
-        self.playground.delete_array(AUX_ARRAY_INDEX)
-        yield
-
     def merge_halves(self, start: int, a_len: int, b_len: int):
         return self.old_merge_roll_and_drop(start, a_len, b_len)
 
     def run(self):
-        """merge_len: int = 2
+        merge_len: int = 2
 
         while merge_len <= self.playground.main_array_len:
             halves_len: int = merge_len >> 1
+
+            self.playground.spawn_new_array(halves_len)
 
             for merge_start_index in range(0, self.playground.main_array_len, merge_len):
 
@@ -1344,12 +1412,8 @@ How did this happen?""")
                 for _ in self.merge_halves(merge_start_index, halves_len, halves_len):
                     yield
 
-            merge_len <<= 1"""
-        
-        a_len: int = self.playground.main_array_len >> 1
-        b_len: int = self.playground.main_array_len - a_len
-        for _ in self.merge_halves(0, a_len, b_len):
-            yield
+            self.playground.delete_array(1)
+            merge_len <<= 1
 
 
 class Concurrent(Algorithm):
