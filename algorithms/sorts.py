@@ -3,6 +3,7 @@ from algorithms.algorithm import Option
 from typing import Iterable, Callable
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
+from math import sqrt, floor
 
 class BubbleSort(Algorithm):
     """Bubble Sort"""
@@ -551,64 +552,86 @@ class QuickSort(Algorithm):
 
 class MergeSort(Algorithm):
     """Merge Sort"""
-    def out_of_place(self, start=0, end=0):
-        if end == 0:
-            end = self.playground.main_array_len
+    def merge_halves_out_of_place(self, start: int, midpoint: int, end: int):
+        assert start <= midpoint <= end, f"{start = }, {midpoint = }, {end = }"
 
-        section_length = end - start
+        # Merge the two halves in the auxiliary array,
+        # starting at the same position as `start`:
 
-        if section_length > 1:
-            midpoint = start + section_length // 2
+        left_index: int = start
+        right_index: int = midpoint
 
-            for _ in self.out_of_place(start, midpoint):
+        merge_index: int = start
+
+        while left_index < midpoint and right_index < end:
+            left_goes_first: bool = self.playground.compare((0, left_index), "<=", (0, right_index))
+            yield
+
+            if left_goes_first:
+                num: int = self.playground.read((0, left_index))
                 yield
-            for _ in self.out_of_place(midpoint, end):
-                yield
-
-            left_index = start
-            right_index = midpoint
-
-            merge_index = start
-
-            while left_index < midpoint and right_index < end:
-                if self.playground.compare((0, left_index), "<", (0, right_index)):
-                    yield
-
-                    self.playground.write(self.playground.read((0, left_index)), (1, merge_index))
-                    yield
-
-                    left_index += 1
-                else:
-                    yield
-
-                    self.playground.write(self.playground.read((0, right_index)), (1, merge_index))
-                    yield
-
-                    right_index += 1
-                merge_index += 1
-
-            while left_index < midpoint:
-                self.playground.write(self.playground.read((0, left_index)), (1, merge_index))
+                self.playground.write(num, (1, merge_index))
                 yield
 
                 left_index += 1
-                merge_index += 1
-            while right_index < end:
-                self.playground.write(self.playground.read((0, right_index)), (1, merge_index))
+            else:
+                num: int = self.playground.read((0, right_index))
+                yield
+                self.playground.write(num, (1, merge_index))
                 yield
 
                 right_index += 1
-                merge_index += 1
+            merge_index += 1
 
-            for copy_index in range(start, merge_index):
-                self.playground.write(self.playground.read((1, copy_index)), (0, copy_index))
-                yield
+        # If the left_index < midpoint and right_index == end
+        while left_index < midpoint:
+            num: int = self.playground.read((0, left_index))
+            yield
+            self.playground.write(num, (1, merge_index))
+            yield
+
+            left_index += 1
+            merge_index += 1
+        # If the left_index == midpoint and right_index < end
+        while right_index < end:
+            num: int = self.playground.read((0, right_index))
+            yield
+            self.playground.write(num, (1, merge_index))
+            yield
+
+            right_index += 1
+            merge_index += 1
+
+        # Copy the merged halves from the auxiliary array into the main array:
+
+        # (merge_index SHOULD BE EQUAL TO end NOW)
+        for copy_index in range(start, merge_index):
+            num: int = self.playground.read((1, copy_index))
+            yield
+            self.playground.write(num, (0, copy_index))
+            yield
+
+    def merge_sort(self, start: int, end: int):
+        section_length: int = end - start
+
+        if section_length <= 1:
+            return
+
+        midpoint: int = start + (section_length >> 1)
+
+        for _ in self.merge_sort(start, midpoint):
+            yield
+        for _ in self.merge_sort(midpoint, end):
+            yield
+
+        for _ in self.merge_halves_out_of_place(start, midpoint, end):
+            yield
 
     def run(self):
         self.playground.spawn_new_array(self.playground.main_array_len)
         yield
 
-        for _ in self.out_of_place():
+        for _ in self.merge_sort(0, self.playground.main_array_len):
             yield
 
         self.playground.delete_array(1)
@@ -1090,6 +1113,194 @@ class GravitySort(Algorithm):
 
 class SquareRootSort(Algorithm):
     """Square Root Sort"""
+
+    # Iterative mergesort with roll-and-drop example:
+    # 0 1 2 3 4 5 6 7 8 9 A B C D E F
+    # 5 A 9 2 D E C 8 1 B 0 3 6 4 F 7
+    #|5|A|9|2|D|E|C|8|1|B|0|3|6|4|F|7|
+    # ...|
+    #|5 A 2 9|D E 8 C 1 B 0 3 4 6 7 F  1 2
+    #|2 A 5 9|D E 8 C 1 B 0 3 4 6 7 F  2 1
+    #|2 5 A 9|D E 8 C 1 B 0 3 4 6 7 F    2  
+    #|2 5 9 A|D E 8 C 1 B 0 3 4 6 7 F
+    # 2 5 9 A|D E 8 C|1 B 0 3 4 6 7 F  1 2
+    # 2 5 9 A|8 E D C|1 B 0 3 4 6 7 F  2 1
+    # 2 5 9 A|8 C D E|1 B 0 3 4 6 7 F  1 2
+    # 2 5 9 A|8 C D E|1 B 0 3 4 6 7 F    2
+    # 2 5 9 A|8 C D E|1 B 0 3 4 6 7 F
+    # 2 5 9 A 8 C D E|1 B 0 3|4 6 7 F  1 2
+    # 2 5 9 A 8 C D E|0 B 1 3|4 6 7 F  2 1
+    # 2 5 9 A 8 C D E|0 1 B 3|4 6 7 F  1 2
+    # 2 5 9 A 8 C D E|0 1 B 3|4 6 7 F    2
+    # 2 5 9 A 8 C D E|0 1 3 B|4 6 7 F    2
+    # 2 5 9 A 8 C D E|0 1 3 B|4 6 7 F
+    # 2 5 9 A 8 C D E 0 1 3 B|4 6 7 F| 1 2
+    # 2 5 9 A 8 C D E 0 1 3 B|4 6 7 F|   2
+    # 2 5 9 A 8 C D E 0 1 3 B|4 6 7 F|
+    #
+    #|2 5 9 A 8 C D E|0 1 3 B 4 6 7 F  1 2 3 4
+    #|2 5 9 A 8 C D E|0 1 3 B 4 6 7 F    2 3 4
+    #|2 5 9 A 8 C D E|0 1 3 B 4 6 7 F      3 4
+    #|2 5 8 A 9 C D E|0 1 3 B 4 6 7 F      4 3
+    #|2 5 8 9 A C D E|0 1 3 B 4 6 7 F      3 4
+    #|2 5 8 9 A C D E|0 1 3 B 4 6 7 F        4
+    #|2 5 8 9 A C D E|0 1 3 B 4 6 7 F
+    # 2 5 8 9 A C D E|0 1 3 B 4 6 7 F| 1 2 3 4
+    # 2 5 8 9 A C D E|0 1 3 B 4 6 7 F|   2 3 4
+    # 2 5 8 9 A C D E|0 1 3 B 4 6 7 F|     3 4
+    # 2 5 8 9 A C D E|0 1 3 B 4 6 7 F|       4
+    # 2 5 8 9 A C D E|0 1 3 4 B 6 7 F|       4
+    # 2 5 8 9 A C D E|0 1 3 4 6 B 7 F|       4
+    # 2 5 8 9 A C D E|0 1 3 4 6 7 B F|       4
+    # 2 5 8 9 A C D E|0 1 3 4 6 7 B F|
+    #
+    #|2 5 8 9 A C D E|0 1 3 4 6 7 B F  1 2 3 4 5 6 7 8
+    # 0|5 8 9 A C D E 2|1 3 4 6 7 B F  2 3 4 5 6 7 8 1
+    # 0 1|8 9 A C D E 2 5|3 4 6 7 B F  3 4 5 6 7 8 1 2
+    # 0 1|2 9 A C D E 8 5|3 4 6 7 B F  1 4 5 6 7 8 3 2
+    # 0 1 2|9 A C D E 8 5|3 4 6 7 B F    4 5 6 7 8 3 2
+    # 0 1 2 3|A C D E 8 5 9|4 6 7 B F    5 6 7 8 3 2 4
+    # 0 1 2 3 4|C D E 8 5 9 A|6 7 B F    6 7 8 3 2 4 5
+    # 0 1 2 3 4|5 D E 8 C 9 A|6 7 B F    2 7 8 3 6 4 5
+    # 0 1 2 3 4 5|D E 8 C 9 A|6 7 B F      7 8 3 6 4 5
+    # 0 1 2 3 4 5 6|E 8 C 9 A D|7 B F      8 3 6 4 5 7
+    # 0 1 2 3 4 5 6 7|8 C 9 A D E|B F      3 6 4 5 7 8
+    # 0 1 2 3 4 5 6 7|8 C 9 A D E|B F      3 6 4 5 7 8
+    # 0 1 2 3 4 5 6 7 8|C 9 A D E|B F        6 4 5 7 8
+    # 0 1 2 3 4 5 6 7 8|9 C A D E|B F        4 6 5 7 8
+    # 0 1 2 3 4 5 6 7 8 9|C A D E|B F          6 5 7 8
+    # 0 1 2 3 4 5 6 7 8 9|A C D E|B F          5 6 7 8
+    # 0 1 2 3 4 5 6 7 8 9 A|C D E|B F            6 7 8
+    # 0 1 2 3 4 5 6 7 8 9 A B|D E C|F            7 8 6
+    # 0 1 2 3 4 5 6 7 8 9 A B|C E D|F            6 8 7
+    # 0 1 2 3 4 5 6 7 8 9 A B C|E D|F              8 7
+    # 0 1 2 3 4 5 6 7 8 9 A B C|D E|F              7 8
+    # 0 1 2 3 4 5 6 7 8 9 A B C D|E|F                8
+    # 0 1 2 3 4 5 6 7 8 9 A B C D|E|F                8
+    # 0 1 2 3 4 5 6 7 8 9 A B C D E F
+
+    # Square Root Sort iteration example:
+    # ...
+    #  2 5 8 9 A C D E|0 1 3 4 6 7 B F
+    # sort blocks:
+    # |2 5|8 9|A C|D E|0 1|3 4|6 7|B F|  A A A A B B B B  |2 8 A D|1 4 7 F  0 1 2 3
+    # |0 1|8 9|A C|D E|2 5|3 4|6 7|B F|  B A A A A B B B   1|8 A D 2|4 7 F  1 2 3 0
+    # |0 1|2 5|A C|D E|8 9|3 4|6 7|B F|  B A A A A B B B   1|2 A D 8|4 7 F  0 2 3 1
+    # |0 1|2 5|A C|D E|8 9|3 4|6 7|B F|  B A A A A B B B   1 2|A D 8|4 7 F    2 3 1
+    # |0 1|2 5|3 4|D E|8 9|A C|6 7|B F|  B A B A A A B B   1 2 4|D 8 A|7 F    3 1 2
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7|8 A D|F    1 2 3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7|8 A D|F    1 2 3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7 8|A D|F      2 3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7 8|A D|F      2 3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7 8 A|D|F        3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7 8 A|D|F        3
+    # |0 1|2 5|3 4|6 7|8 9|A C|D E|B F|  B A B B A A A B   1 2 4 7 8 A D F
+    # merge blocks:
+    #     * When mergin a B-block to the merged section,
+    #       IF THE PREVIOUSLY MERGED BLOCK WAS AN A-BLOCK,
+    #       OR IT'S THE FIRST BLOCK TO BE MERGED,
+    #       just attach it to the merged section.
+    #       This is because the first element in the A-block
+    #       after the B-block must be STRICTLY GREATER (>, not >=)
+    #       than the last element of the B-block, and because
+    #       the first element of the A-block is the current
+    #       first element in the merged section.
+    #       And so, EVERY element in the B-block belongs before
+    #       that element, and before EVERY element in the A-block,
+    #       no matter where they are in the merged block,
+    #       and also, EVERY element in the merged section.
+    #       Since both the merged section and the B-block
+    #       are now sorted, just attach the B-block!
+    #  0 1 2 5 3 4 6 7 8 9 A C D E|B F|* B A B B A A A B
+    #  0 1 2 5 3 4 6 7 8 9 A C D E B F   B A B B A A A M
+    #  0 1 2 5 3 4 6 7 8 9 A C|D E|B F   B A B B A A A M   0 1
+    #  0 1 2 5 3 4 6 7 8 9 A C B|E D|F                     1 0
+    #  0 1 2 5 3 4 6 7 8 9 A C B|D E|F                     0 1
+    #  0 1 2 5 3 4 6 7 8 9 A C B D|E|F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A C B D|E|F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A C B D E F   B A B B A A M M
+    #  0 1 2 5 3 4 6 7 8 9|A C|B D E F   B A B B A A M M   0 1
+    #  0 1 2 5 3 4 6 7 8 9|A C|B D E F                     0 1
+    #  0 1 2 5 3 4 6 7 8 9 A|C|B D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B|C|D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B|C|D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B C D E F   B A B B A M M M
+    #  0 1 2 5 3 4 6 7|8 9|A B C D E F   B A B B A M M M   0 1
+    #  0 1 2 5 3 4 6 7|8 9|A B C D E F                     0 1
+    #  0 1 2 5 3 4 6 7 8|9|A B C D E F                       1
+    #  0 1 2 5 3 4 6 7 8|9|A B C D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B C D E F   B A B B M M M M
+    #  0 1 2 5 3 4|6 7|8 9 A B C D E F * B A B B M M M M   0 1
+    #  0 1 2 5 3 4|6 7|8 9 A B C D E F                     0 1
+    #  0 1 2 5 3 4 6|7|8 9 A B C D E F                       1
+    #  0 1 2 5 3 4 6|7|8 9 A B C D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B C D E F   B A B M M M M M
+    #  0 1 2 5|3 4|6 7 8 9 A B C D E F   B A B M M M M M   0 1
+    #  0 1 2 5|3 4|6 7 8 9 A B C D E F                     0 1
+    #  0 1 2 5 3|4|6 7 8 9 A B C D E F                       1
+    #  0 1 2 5 3|4|6 7 8 9 A B C D E F                       1
+    #  0 1 2 5 3 4 6 7 8 9 A B C D E F   B A M M M M M M
+    #  0 1|2 5|3 4 6 7 8 9 A B C D E F   B A M M M M M M   0 1
+    #  0 1|2 5|3 4 6 7 8 9 A B C D E F                     0 1
+    #  0 1 2|5|3 4 6 7 8 9 A B C D E F                       1
+    #  0 1 2 3|5|4 6 7 8 9 A B C D E F                       1
+    #  0 1 2 3 4|5|6 7 8 9 A B C D E F                       1
+    #  0 1 2 3 4|5|6 7 8 9 A B C D E F                       1
+    #  0 1 2 3 4 5 6 7 8 9 A B C D E F   B M M M M M M M
+    # |0 1|2 3 4 5 6 7 8 9 A B C D E F * B M M M M M M M   0 1
+    # |0 1|2 3 4 5 6 7 8 9 A B C D E F                     0 1
+    #  0|1|2 3 4 5 6 7 8 9 A B C D E F                       1
+    #  0|1|2 3 4 5 6 7 8 9 A B C D E F                       1
+    #  0 1 2 3 4 5 6 7 8 9 A B C D E F   M M M M M M M M
+
+    # Alternate way of sorting the blocks:
+    #  0 1 2 5 3 4 6 7 8 9 A C D E|B F|  B A B B A A A B
+    #  0 1 2 5 3 4 6 7 8 9 A C|D E|B F|  B A B B A A A M   D E
+    #                          w   ^                       ^
+    #  0 1 2 5 3 4 6 7 8 9 A C|B E B F|                    D E
+    #                            w   ^                     ^
+    #  0 1 2 5 3 4 6 7 8 9 A C|B D B F|                    D E
+    #                              w ^                       ^
+    #  0 1 2 5 3 4 6 7 8 9 A C|B D E F|                    D E
+    #                                ^
+    #  0 1 2 5 3 4 6 7 8 9 A C|B D E F|                    D E
+    #  0 1 2 5 3 4 6 7 8 9|A C|B D E F|  B A B B A A M M   A C
+    #                      w   ^                           ^
+    #  0 1 2 5 3 4 6 7 8 9|A C B D E F|                    A C
+    #                        w ^                             ^
+    #  0 1 2 5 3 4 6 7 8 9|A B B D E F|                    A C
+    #                          w ^                           ^
+    #  0 1 2 5 3 4 6 7 8 9|A B C D E F|                    A C
+    #                            ^
+    #  0 1 2 5 3 4 6 7 8 9|A B C D E F|                    A C
+    #  0 1 2 5 3 4 6 7|8 9|A B C D E F|  B A B B A M M M   8 9
+    #                  w   ^                               ^
+    #  0 1 2 5 3 4 6 7|8 9 A B C D E F|                    8 9
+    #                    w ^                                 ^
+    #  0 1 2 5 3 4 6 7|8 9 A B C D E F|                    8 9
+    #                      ^
+    #  0 1 2 5 3 4 6 7|8 9 A B C D E F|                    8 9
+    #  0 1 2 5 3 4|6 7|8 9 A B C D E F|  B A B B M M M M   8 9
+    #  0 1 2 5|3 4|6 7 8 9 A B C D E F|  B A B M M M M M   3 4
+    #          w   ^                                       ^
+    #  0 1 2 5|3 4 6 7 8 9 A B C D E F|                    3 4
+    #            w ^                                         ^
+    #  0 1 2 5|3 4 6 7 8 9 A B C D E F|                    3 4
+    #              ^
+    #  0 1 2 5|3 4 6 7 8 9 A B C D E F|                    3 4
+    #  0 1|2 5|3 4 6 7 8 9 A B C D E F|  B A M M M M M M   2 5
+    #      w   ^                                           ^
+    #  0 1|2 5 3 4 6 7 8 9 A B C D E F|                    2 5
+    #        w ^                                             ^
+    #  0 1|2 3 3 4 6 7 8 9 A B C D E F|                    2 5
+    #          w ^                                           ^
+    #  0 1|2 3 4 4 6 7 8 9 A B C D E F|                    2 5
+    #            w ^                                         ^
+    #  0 1|2 3 4 5 6 7 8 9 A B C D E F|                    2 5
+    #              ^
+    #  0 1|2 3 4 5 6 7 8 9 A B C D E F|                    2 5
+    # |0 1|2 3 4 5 6 7 8 9 A B C D E F|  B M M M M M M M   2 5
+    # |0 1 2 3 4 5 6 7 8 9 A B C D E F|  M M M M M M M M
     AUX_ARRAY_INDEX = 1
 
     def swap_sections(self, a_start: int, b_start: int, len: int):
@@ -1160,7 +1371,7 @@ class SquareRootSort(Algorithm):
             )
             yield
 
-    def old_merge_roll_and_drop(self, start: int, a_len: int, b_len: int):
+    def merge_by_roll_and_drop(self, start: int, a_len: int, b_len: int):
         """
         Since all a_len items in the a-section, in the worst case scenario,
         need to roll from before the b-section to after the b-section,
@@ -1395,9 +1606,59 @@ How did this happen?""")
                 )
 
     def merge_halves(self, start: int, a_len: int, b_len: int):
-        return self.old_merge_roll_and_drop(start, a_len, b_len)
+        return self.merge_by_roll_and_drop(start, a_len, b_len)
+
+    def merge_mostly_equal_halves(self, start: int, a_len: int, b_len: int):
+        total_len: int = a_len + b_len
+
+        block_size: int = int(sqrt(total_len))
+        total_elements_in_perfect_blocks: int = block_size ** 2
+
+        # If we split the slice in the array with the two halves to merge
+        # (it's [start, start + total_len) into `block_size` blocks,
+        # each containing `block_size` elements, it's possible that
+        # `block_size` doesn't evenly divide `total_len`, and we have a remainder
+        # of elements, in [0, block_size).
+        #
+        # For example:
+        # # # # #|# # # #|# # # #|# # # #|# # <-- remainder
+        #                  ^ middle
+        # (each half here contains 9 elements)
+        #
+        # We also want each half to have both its blocks
+        # start and end from the center of the slice.
+        # We can do this, by dividing the remainder of elements
+        # by 2 (by right shifting by 1), and placing the start
+        # index for the blocks at that result:
+        #
+        # #|# # # #|# # # #|# # # #|# # # #|#
+        #                  ^ middle
+        #
+        # For an odd number of total elements to merge:
+        # # # # #|# # # #|# # # #|# # # #|# # # <-- remainder
+        #                    ^ middle
+        # (a_len = 10, b_len = 9)
+        # # #|# # # #|# # # #|# # # #|# # # #|#
+        # and
+        # # # # #|# # # #|# # # #|# # # #|# # # <-- remainder
+        #                  ^ middle
+        # (a_len = 9, b_len = 10)
+        # #|# # # #|# # # #|# # # #|# # # #|# #
+        remaining_elements: int = total_len - total_elements_in_perfect_blocks
+        blocks_start_index: int = remaining_elements >> 1
+
+        for block_start_index in range(blocks_start_index, total_len, block_size):
+            # Each of these [block_start_index, block_start_index + block_size)
+            # equals to one block.
+            pass
+
+        return self.merge_by_roll_and_drop(start, a_len, b_len)
 
     def run(self):
+        """
+        TODO: THE LAST BLOCKS TO MERGE MAY HAVE
+        AN IRREGULAR SIZE. THIS MAY CAUSE BUGS.
+        """
         merge_len: int = 2
 
         while merge_len <= self.playground.main_array_len:
