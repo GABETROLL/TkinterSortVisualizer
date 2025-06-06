@@ -1,6 +1,6 @@
 from algorithms.algorithms import *
 from algorithms.algorithm import Option
-from typing import Iterable, Callable
+from typing import Iterable, Callable, Generator
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
 from math import sqrt, floor
@@ -550,9 +550,12 @@ class QuickSort(Algorithm):
             yield
 
 
+@dataclass
 class MergeSort(Algorithm):
     """Merge Sort"""
-    def merge_halves_out_of_place(self, start: int, midpoint: int, end: int):
+    options: dict[str, Option] = field(default_factory={"semi-in-place": Option(False, (False, True))}.copy)
+
+    def merge_halves_out_of_place(self, start: int, midpoint: int, end: int, copy_array_index: int):
         assert start <= midpoint <= end, f"{start = }, {midpoint = }, {end = }"
 
         # Merge the two halves in the auxiliary array,
@@ -570,14 +573,14 @@ class MergeSort(Algorithm):
             if left_goes_first:
                 num: int = self.playground.read((0, left_index))
                 yield
-                self.playground.write(num, (1, merge_index))
+                self.playground.write(num, (copy_array_index, merge_index))
                 yield
 
                 left_index += 1
             else:
                 num: int = self.playground.read((0, right_index))
                 yield
-                self.playground.write(num, (1, merge_index))
+                self.playground.write(num, (copy_array_index, merge_index))
                 yield
 
                 right_index += 1
@@ -587,7 +590,7 @@ class MergeSort(Algorithm):
         while left_index < midpoint:
             num: int = self.playground.read((0, left_index))
             yield
-            self.playground.write(num, (1, merge_index))
+            self.playground.write(num, (copy_array_index, merge_index))
             yield
 
             left_index += 1
@@ -596,7 +599,7 @@ class MergeSort(Algorithm):
         while right_index < end:
             num: int = self.playground.read((0, right_index))
             yield
-            self.playground.write(num, (1, merge_index))
+            self.playground.write(num, (copy_array_index, merge_index))
             yield
 
             right_index += 1
@@ -606,12 +609,156 @@ class MergeSort(Algorithm):
 
         # (merge_index SHOULD BE EQUAL TO end NOW)
         for copy_index in range(start, merge_index):
-            num: int = self.playground.read((1, copy_index))
+            num: int = self.playground.read((copy_array_index, copy_index))
             yield
             self.playground.write(num, (0, copy_index))
             yield
 
-    def merge_sort(self, start: int, end: int):
+    def merge_halves_semi_in_place(self, start: int, midpoint: int, end: int, copy_array_index: int):
+        """
+        Merges the two halves in the main array, [start, midpoint) and [midpoint, end),
+        "semi-in place", by only copying the left side into an aux array,
+        and merging the two directly in the main array slice, [start, end)!
+
+        The aux array MUST ALREADY BE CREATED, or this method raises an AssertionError.
+
+        Examples:
+
+        0 3 4 7 8   0 3 4 7 8|1 2 5 6 9  
+        l           w         r
+        0 3 4 7 8   0 3 4 7 8|1 2 5 6 9  
+          l           w       r
+        0 3 4 7 8   0 1 4 7 8|1 2 5 6 9  
+          l             w       r
+        0 3 4 7 8   0 1 2 7 8|1 2 5 6 9  
+          l               w       r
+        0 3 4 7 8   0 1 2 3 8|1 2 5 6 9  
+            l               w     r
+        0 3 4 7 8   0 1 2 3 4|1 2 5 6 9  
+              l               w   r
+        0 3 4 7 8   0 1 2 3 4|5 2 5 6 9  
+              l                 w   r
+        0 3 4 7 8   0 1 2 3 4|5 6 5 6 9  
+              l                   w   r
+        0 3 4 7 8   0 1 2 3 4|5 6 7 6 9  
+                l                   w r
+        0 3 4 7 8   0 1 2 3 4|5 6 7 8 9  
+                  l                   r
+                                      w
+        0 3 4 7 8   0 1 2 3 4|5 6 7 8 9  
+
+        Example where the left side is done first:
+        0 1 2 3 4   0 1 2 3 4|3 4 6 8 9
+        l           w         r
+        0 1 2 3 4   0 1 2 3 4|3 4 6 8 9
+          l           w       r
+        0 1 2 3 4   0 1 2 3 4|3 4 6 8 9
+            l           w     r
+        0 1 2 3 4   0 1 2 3 4|3 4 6 8 9
+              l           w   r
+        0 1 2 3 4   0 1 2 3 4|3 4 6 8 9
+                l           w r
+        0 1 2 3 4   0 1 2 3 3|3 4 6 8 9
+                l             w r
+        0 1 2 3 4   0 1 2 3 3|4 4 6 8 9
+                  l             r
+                                w
+
+        * When the left half is done,
+        the write index and right index meet!
+        This means once they meet, you'd need to read the number
+        at r, only to write it at the same posittion...
+
+        Once they meet, just stop merging!
+
+        Proof: The right index is left_half_len
+        units away from `start`, and so is the end
+        index for the left side's copy from its start index, 0.
+        Whenever a num from the right gets written,
+        both the w and r indices move foward once,
+        so their distance doesn't change. It only changes
+        when the left side progresses. Because of that,
+        and since l starts left_half_len units away from
+        the left copy's end, and r starts left_half_len units
+        away from `start`, when l reaches its end, r and w meet.
+
+        Example where the right side is done first:
+        1 3 5 6 9   1 3 5 6 9|0 2 3 4 4
+        l           w         r
+        1 3 5 6 9   0 3 5 6 9|0 2 3 4 4
+        l             w         r
+        1 3 5 6 9   0 1 5 6 9|0 2 3 4 4
+          l             w       r
+        1 3 5 6 9   0 1 2 6 9|0 2 3 4 4
+          l               w       r
+        1 3 5 6 9   0 1 2 3 9|0 2 3 4 4
+            l               w     r
+        1 3 5 6 9   0 1 2 3 5|0 2 3 4 4
+            l                 w     r
+        1 3 5 6 9   0 1 2 3 5|4 2 3 4 4
+            l                   w     r
+        1 3 5 6 9   0 1 2 3 5|4 4 3 4 4
+            l                     w     r
+        1 3 5 6 9   0 1 2 3 5|4 4 5 4 4
+              l                     w   r
+        1 3 5 6 9   0 1 2 3 5|4 4 5 6 4
+                l                     w r
+        1 3 5 6 9   0 1 2 3 5|4 4 5 6 9
+                  l                     r
+                                        w
+
+        When the right side is done first, just keep copying the left side.
+        It's possible to not even change much of the code.
+        """
+        assert 1 < copy_array_index and copy_array_index in range(self.playground.array_count)
+        assert start <= midpoint <= end and start < end, f"{start = }, {midpoint = }, {end = }"
+
+        first_half_len: int = midpoint - start
+
+        for _ in self.playground.copy_array_slice(0, start, copy_array_index, 0, first_half_len):
+            yield
+
+        print("COPIED")
+
+        left_index: int = 0
+        right_index: int = midpoint
+        write_index: int = start
+
+        while left_index < first_half_len:
+            left_goes_first: bool = True
+
+            if right_index == end:
+                left_goes_first = True
+                # because there's nothing left at the right,
+                # the left side needs to be continuously be copied
+            else:
+                left_goes_first: bool = self.playground.compare((copy_array_index, left_index), "<=", (0, right_index))
+                yield
+
+            if left_goes_first:
+                num: int = self.playground.read((copy_array_index, left_index))
+                yield
+
+                self.playground.write(num, (0, write_index))
+                yield
+
+                left_index += 1
+            else:
+                num: int = self.playground.read((0, right_index))
+                yield
+
+                self.playground.write(num, (0, write_index))
+                yield
+
+                right_index += 1
+
+            write_index += 1
+
+    def _merge_sort(self, start: int, end: int, merge_method: Callable[[int, int, int, int], Generator[None, None, None]]):
+        """
+        Assumes the copy array index is 1.
+        This method is meant to be a private method for `run` to use.
+        """
         section_length: int = end - start
 
         if section_length <= 1:
@@ -619,19 +766,26 @@ class MergeSort(Algorithm):
 
         midpoint: int = start + (section_length >> 1)
 
-        for _ in self.merge_sort(start, midpoint):
+        for _ in self._merge_sort(start, midpoint):
             yield
-        for _ in self.merge_sort(midpoint, end):
+        for _ in self._merge_sort(midpoint, end):
             yield
 
-        for _ in self.merge_halves_out_of_place(start, midpoint, end):
+        for _ in merge_method(start, midpoint, end, 1):
             yield
 
     def run(self):
-        self.playground.spawn_new_array(self.playground.main_array_len)
+        aux_array_len: int = self.playground.main_array_len
+        merge_method: Callable[[int, int, int], Generator[None, None, None]] = self.merge_halves_out_of_place
+
+        if self.options["semi-in-place"].value:
+            aux_array_len >>= 1 + 1  # + 1 just in case
+            merge_method = self.merge_halves_semi_in_place
+
+        self.playground.spawn_new_array(aux_array_len)
         yield
 
-        for _ in self.merge_sort(0, self.playground.main_array_len):
+        for _ in self._merge_sort(0, self.playground.main_array_len, merge_method):
             yield
 
         self.playground.delete_array(1)
@@ -1111,7 +1265,7 @@ class GravitySort(Algorithm):
                 yield
 
 
-class SquareRootSort(Algorithm):
+class SquareRootSort(MergeSort):
     """Square Root Sort"""
 
     # Iterative mergesort with roll-and-drop example:
@@ -1609,50 +1763,252 @@ How did this happen?""")
         return self.merge_by_roll_and_drop(start, a_len, b_len)
 
     def merge_mostly_equal_halves(self, start: int, a_len: int, b_len: int):
+        """
+        TODO: TEST
+        """
         total_len: int = a_len + b_len
+        end: int = start + total_len
+
+        # BLOCK MERGE PORTION:
 
         block_size: int = int(sqrt(total_len))
-        total_elements_in_perfect_blocks: int = block_size ** 2
+        # total_elements_in_perfect_blocks: int = block_size ** 2
 
         # If we split the slice in the array with the two halves to merge
         # (it's [start, start + total_len) into `block_size` blocks,
         # each containing `block_size` elements, it's possible that
         # `block_size` doesn't evenly divide `total_len`, and we have a remainder
         # of elements, in [0, block_size).
+        # Not only that, we also want the A section to end with a
+        # perfect block, and the B section to start with a perfect block,
+        # leaving the "remainders" at the start and end, respectively.
         #
-        # For example:
-        # # # # #|# # # #|# # # #|# # # #|# # <-- remainder
+        # To do this, make A's blocks start at a_len % block_size,
+        # and make B's blocks start at the midpoint, and end at
+        # b_len // block_size:
+        #
+        # (a_len = 9, b_len = 9):
+        # # # # #|# # # #|# # # #|# # # #|# #
         #                  ^ middle
-        # (each half here contains 9 elements)
+        #                 ^ remainder = midpoint % blocksize = 9 % 4 = 1
         #
-        # We also want each half to have both its blocks
-        # start and end from the center of the slice.
-        # We can do this, by dividing the remainder of elements
-        # by 2 (by right shifting by 1), and placing the start
-        # index for the blocks at that result:
+        # Slide the start of the blocks by 1:
         #
         # #|# # # #|# # # #|# # # #|# # # #|#
         #                  ^ middle
         #
-        # For an odd number of total elements to merge:
-        # # # # #|# # # #|# # # #|# # # #|# # # <-- remainder
-        #                    ^ middle
-        # (a_len = 10, b_len = 9)
-        # # #|# # # #|# # # #|# # # #|# # # #|#
-        # and
-        # # # # #|# # # #|# # # #|# # # #|# # # <-- remainder
-        #                  ^ middle
-        # (a_len = 9, b_len = 10)
+        # Beware! `block_size` can divide `total_len` evenly,
+        # giving a quotient of, let's call it "q",
+        # and yet, when aligning the blocks to the middle,
+        # the total number of blocks is actually q - 1!
+        # There's remainders in both sides, which in total,
+        # contain `block_size` elements! For example:
+        # (a_len = 7, b_len = 8):
+        # # # #|# # #|# # #|# # #|# # #
+        #              ^ middle
+        #             ^ remainder = midpoint % blocksize = 7 % 3 = 1
+        # Becomes:
+        # #|# # #|# # #|# # #|# # #|# #
+        #              ^ middle
+        #
+        # The total amount of perfect blocks, therefore, is ONLY
+        # the total perfect a blocks, and the total perfect b blocks.
+        blocks_start_index: int = start + a_len % block_size
+        total_perfect_a_blocks: int = a_len // block_size
+        total_perfect_b_blocks: int = b_len // block_size
+        total_perfect_blocks: int = total_perfect_a_blocks + total_perfect_b_blocks
+
+        blocks_end_index: int = blocks_start_index + total_perfect_blocks * block_size
+
+        print(f"{total_len = }, {end = }, {block_size = }, {blocks_start_index = }, {total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+
+        # Spawn array that keeps track of which blocks are A blocks,
+        # and which blocks are B blocks.
+
+        self.playground.spawn_new_array(total_perfect_blocks)
+        yield
+
+        BLOCK_TYPES_ARRAY_INDEX = 1
+        A = 0
+        B = 1
+
+        print(f"{total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+
+        for block_index in range(total_perfect_a_blocks):
+            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            self.playground.write(A, (BLOCK_TYPES_ARRAY_INDEX, block_index))
+            yield
+        for block_index in range(total_perfect_a_blocks, total_perfect_a_blocks + total_perfect_b_blocks):
+            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            self.playground.write(B, (BLOCK_TYPES_ARRAY_INDEX, block_index))
+            yield
+
+        # Spawn the movement imitation array for the A blocks
+
+        self.playground.spawn_new_array(total_perfect_a_blocks)
+        yield
+
+        A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX = 2
+
+        for block_index in range(total_perfect_a_blocks):
+            self.playground.write(block_index, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, block_index))
+            yield
+
+        a_blocks_range_in_blocks: range = range(0, total_perfect_a_blocks)
+        """
+        The slice amongst the BLOCKS where the a-blocks that have not been dropped yet
+        currently are.
+        The indeces in the range are the indices of THE BLOCKS, NOT THE INDIVIDUAL ELEMENTS.
+        """
+        dropped_a_blocks: int = 0
+
+        # Merge blocks by roll and drop
+        while len(a_blocks_range_in_blocks):
+            # Find the smallest A-block through the movement imitation array.
+            # The movement imitation array is needed to force stability
+            # onto the A-blocks.
+            smallest_a_block_index_in_a_blocks: int = 0
+            for imitation_index in range(dropped_a_blocks, total_perfect_a_blocks):
+                found_new_smallest: bool = self.playground.compare(
+                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, imitation_index),
+                    "<",
+                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, smallest_a_block_index_in_a_blocks),
+                )
+                yield
+
+                if found_new_smallest:
+                    smallest_a_block_index_in_a_blocks = imitation_index
+
+            a_blocks_start_index: int = blocks_start_index + a_blocks_range_in_blocks.start * block_size
+            smallest_a_block_start_index: int = a_blocks_start_index + smallest_a_block_index_in_a_blocks * block_size
+            """
+            index to read smallest A-block's value
+            """
+
+            next_b_block_index_in_blocks: int = a_blocks_range_in_blocks.stop
+            next_b_block_start_index: int = blocks_start_index + next_b_block_index_in_blocks * block_size
+            next_b_block_final_index: int = next_b_block_start_index + block_size - 1
+            """
+            index to read next b-block's value
+            """
+
+            print(f"Checking should drop: {a_blocks_range_in_blocks = }, {dropped_a_blocks = }, {self.playground.arrays[A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX] = } {smallest_a_block_index_in_a_blocks = }, {a_blocks_start_index = }, {smallest_a_block_start_index = }, {next_b_block_index_in_blocks = }, {next_b_block_start_index = }, {next_b_block_final_index = }")
+
+            should_drop: bool = False
+
+            if next_b_block_start_index >= blocks_end_index:
+                should_drop = True
+            else:
+                # The next b block *SHOULD* be entirely before the blocks_end_index,
+                # if next_b_block_start_index < blocks_end_index.
+                # TODO: Proof? Account for edge case?
+                should_drop: bool = self.playground.compare((0, smallest_a_block_start_index), "<=", (0, next_b_block_final_index))
+                yield
+
+            if should_drop:
+
+                print(f"Should drop: {a_blocks_start_index = }, {smallest_a_block_start_index = }, {block_size = }")
+
+                # swap blocks
+                # May accidentally be itself! But it probably won't cause an error (?).
+                for _ in self.swap_sections(a_blocks_start_index, smallest_a_block_start_index, block_size):
+                    yield
+
+                # Notify these changes to the aux arrays:
+                #
+                # Since we swapped two A-blocks, we don't need to write any change to the
+                # block types array
+                # 
+                self.playground.swap(
+                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, dropped_a_blocks),
+                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, smallest_a_block_index_in_a_blocks),
+                )
+                yield
+
+                # drop a-block
+                a_blocks_range_in_blocks = range(
+                    a_blocks_range_in_blocks.start + 1,
+                    a_blocks_range_in_blocks.stop,
+                    a_blocks_range_in_blocks.step,
+                )
+
+                # Stop caring about the block in the imitation array (?)
+                dropped_a_blocks += 1
+            else:
+                # Roll the first A-block
+                for _ in self.swap_sections(a_blocks_start_index, next_b_block_start_index, block_size):
+                    yield
+                
+                # Notify aux arrays of the changes
+                # block types array:
+                self.playground.swap(
+                    (BLOCK_TYPES_ARRAY_INDEX, a_blocks_range_in_blocks.start),
+                    (BLOCK_TYPES_ARRAY_INDEX, next_b_block_index_in_blocks),
+                )
+                yield
+                
+                # Roll the block's order indices in the movement imitation array:
+                temp: int = self.playground.read((A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, 0))
+                yield
+
+                for index in range(len(a_blocks_range_in_blocks) - 1):
+                    next_num: int = self.playground.read((A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, index + 1))
+                    yield
+
+                    self.playground.write(next_num, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, index))
+                    yield
+                self.playground.write(temp, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, len(a_blocks_range_in_blocks) - 1))
+                yield
+
+                # MOVE THE A-BLOCKS RANGE IN BLOCKS INDICES FOWARD BY 1:
+
+                a_blocks_range_in_blocks = range(
+                    a_blocks_range_in_blocks.start + 1,
+                    a_blocks_range_in_blocks.stop + 1,
+                    a_blocks_range_in_blocks.step,
+                )
+
+        self.playground.delete_array(A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX)
+        yield
+
+        # INDIVIDUAL MERGES PORTION:
+        print("INDIVIDUAL MERGES TIME")
+
+        self.playground.spawn_new_array(block_size)
+        yield
+
+        BLOCK_MERGES_AUX_ARRAY_INDEX = A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX
+        # one replaced the other
+
         # #|# # # #|# # # #|# # # #|# # # #|# #
-        remaining_elements: int = total_len - total_elements_in_perfect_blocks
-        blocks_start_index: int = remaining_elements >> 1
+        #                                   ^ blocks_end
+        #                                       ^ end
+        #                           ^ first `join_index` (defined below)
+        # If there are more elements past the blocks before the `blocks_end` index,
+        # the MUST(?) be remaining elements from the B-half,
+        # and there MUST(?) be, in total, less than `block_size` of them.
+        # extra, undersized block at the end of the blocks,
+        # just append it to the sorted section!
+        #
+        # After this, we need to merge the extra elements from the A-half at the start.
+        for join_index in range(blocks_end_index - block_size, blocks_start_index - 1, -block_size):
+            print(f"Merging: {join_index = }, {blocks_end_index = } => start = {join_index}, midpoint = {join_index + block_size}, end = {end}")
+            for _ in self.merge_halves_semi_in_place(join_index, join_index + block_size, end, BLOCK_MERGES_AUX_ARRAY_INDEX):
+                yield
+            # This may actually stop early if the blocks only need to be prepended directly
+            # to the merged section! TODO: check
 
-        for block_start_index in range(blocks_start_index, total_len, block_size):
-            # Each of these [block_start_index, block_start_index + block_size)
-            # equals to one block.
-            pass
+        # Merge the extra blocks from the A half:
+        assert blocks_start_index - start < block_size
+        # (Because the extra blocks from the A half have to be strictly less than `block_size`,
+        # we can use the block merges aux array to merge them with the rest of the section!)
+        for _ in self.merge_halves_semi_in_place(start, blocks_start_index, end, BLOCK_MERGES_AUX_ARRAY_INDEX):
+            yield
 
-        return self.merge_by_roll_and_drop(start, a_len, b_len)
+        self.playground.delete_array(BLOCK_MERGES_AUX_ARRAY_INDEX)
+        yield
+        self.playground.delete_array(BLOCK_TYPES_ARRAY_INDEX)
+        yield
 
     def run(self):
         """
@@ -1664,17 +2020,27 @@ How did this happen?""")
         while merge_len <= self.playground.main_array_len:
             halves_len: int = merge_len >> 1
 
-            self.playground.spawn_new_array(halves_len)
+            print(f"Iteration of merges: {merge_len = } {halves_len = }")
 
             for merge_start_index in range(0, self.playground.main_array_len, merge_len):
+                merge_end: int = min(self.playground.main_array_len, merge_start_index + merge_len)
+                true_merge_len: int = merge_end - merge_start_index
 
-                print(f"{merge_start_index = } {merge_len = } {halves_len = }")
+                a_len: int = true_merge_len >> 1
+                b_len: int = true_merge_len - a_len
 
-                for _ in self.merge_halves(merge_start_index, halves_len, halves_len):
+                print(f"Merging: {merge_start_index = } {merge_end = } {true_merge_len = } {a_len = } {b_len = }")
+
+                for _ in self.merge_mostly_equal_halves(merge_start_index, a_len, b_len):
                     yield
 
-            self.playground.delete_array(1)
             merge_len <<= 1
+        
+        """a_len: int = self.playground.main_array_len >> 1
+        b_len: int = self.playground.main_array_len - a_len
+
+        for _ in self.merge_mostly_equal_halves(0, a_len, b_len):
+            yield"""
 
 
 class Concurrent(Algorithm):
