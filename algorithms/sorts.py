@@ -1820,7 +1820,7 @@ How did this happen?""")
 
         blocks_end_index: int = blocks_start_index + total_perfect_blocks * block_size
 
-        print(f"{total_len = }, {end = }, {block_size = }, {blocks_start_index = }, {total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+        # print(f"{total_len = }, {end = }, {block_size = }, {blocks_start_index = }, {total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
 
         # Spawn array that keeps track of which blocks are A blocks,
         # and which blocks are B blocks.
@@ -1832,14 +1832,14 @@ How did this happen?""")
         A = 0
         B = 1
 
-        print(f"{total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+        # print(f"{total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
 
         for block_index in range(total_perfect_a_blocks):
-            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            # print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
             self.playground.write(A, (BLOCK_TYPES_ARRAY_INDEX, block_index))
             yield
         for block_index in range(total_perfect_a_blocks, total_perfect_a_blocks + total_perfect_b_blocks):
-            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            # print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
             self.playground.write(B, (BLOCK_TYPES_ARRAY_INDEX, block_index))
             yield
 
@@ -1892,7 +1892,7 @@ How did this happen?""")
             index to read next b-block's value
             """
 
-            print(f"Checking should drop: {a_blocks_range_in_blocks = }, {dropped_a_blocks = }, {self.playground.arrays[A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX] = } {smallest_a_block_index_in_a_blocks = }, {a_blocks_start_index = }, {smallest_a_block_start_index = }, {next_b_block_index_in_blocks = }, {next_b_block_start_index = }, {next_b_block_final_index = }")
+            # print(f"Checking should drop: {a_blocks_range_in_blocks = }, {dropped_a_blocks = }, {self.playground.arrays[A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX] = } {smallest_a_block_index_in_a_blocks = }, {a_blocks_start_index = }, {smallest_a_block_start_index = }, {next_b_block_index_in_blocks = }, {next_b_block_start_index = }, {next_b_block_final_index = }")
 
             should_drop: bool = False
 
@@ -1902,12 +1902,13 @@ How did this happen?""")
                 # The next b block *SHOULD* be entirely before the blocks_end_index,
                 # if next_b_block_start_index < blocks_end_index.
                 # TODO: Proof? Account for edge case?
+                print(f"{smallest_a_block_start_index = }, {next_b_block_start_index = }, {next_b_block_final_index = }, {blocks_end_index = }")
                 should_drop: bool = self.playground.compare((0, smallest_a_block_start_index), "<=", (0, next_b_block_final_index))
                 yield
 
             if should_drop:
 
-                print(f"Should drop: {a_blocks_start_index = }, {smallest_a_block_start_index = }, {block_size = }")
+                # print(f"Should drop: {a_blocks_start_index = }, {smallest_a_block_start_index = }, {block_size = }")
 
                 # swap blocks
                 # May accidentally be itself! But it probably won't cause an error (?).
@@ -1972,7 +1973,7 @@ How did this happen?""")
         yield
 
         # INDIVIDUAL MERGES PORTION:
-        print("INDIVIDUAL MERGES TIME")
+        # print("INDIVIDUAL MERGES TIME")
 
         self.playground.spawn_new_array(block_size)
         yield
@@ -1992,7 +1993,7 @@ How did this happen?""")
         #
         # After this, we need to merge the extra elements from the A-half at the start.
         for join_index in range(blocks_end_index - block_size, blocks_start_index - 1, -block_size):
-            print(f"Merging: {join_index = }, {blocks_end_index = } => start = {join_index}, midpoint = {join_index + block_size}, end = {end}")
+            # print(f"Merging: {join_index = }, {blocks_end_index = } => start = {join_index}, midpoint = {join_index + block_size}, end = {end}")
             for _ in self.merge_halves_semi_in_place(join_index, join_index + block_size, end, BLOCK_MERGES_AUX_ARRAY_INDEX):
                 yield
             # This may actually stop early if the blocks only need to be prepended directly
@@ -2018,9 +2019,7 @@ How did this happen?""")
         merge_len: int = 2
 
         while merge_len <= self.playground.main_array_len:
-            halves_len: int = merge_len >> 1
-
-            print(f"Iteration of merges: {merge_len = } {halves_len = }")
+            # print(f"Iteration of merges: {merge_len = } {halves_len = }")
 
             for merge_start_index in range(0, self.playground.main_array_len, merge_len):
                 merge_end: int = min(self.playground.main_array_len, merge_start_index + merge_len)
@@ -2029,7 +2028,7 @@ How did this happen?""")
                 a_len: int = true_merge_len >> 1
                 b_len: int = true_merge_len - a_len
 
-                print(f"Merging: {merge_start_index = } {merge_end = } {true_merge_len = } {a_len = } {b_len = }")
+                # print(f"Merging: {merge_start_index = } {merge_end = } {true_merge_len = } {a_len = } {b_len = }")
 
                 for _ in self.merge_mostly_equal_halves(merge_start_index, a_len, b_len):
                     yield
