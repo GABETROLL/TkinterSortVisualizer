@@ -546,8 +546,15 @@ class SortApp(tkinter.Tk):
                 y0 = self.canvas.winfo_height() - max_height * array_index
                 y1 = y0 - height
 
-                color = "black" if (array_index, num_index) in self.sort_control.pointers else \
-                    rainbow_color(num, self.sort_control.main_array_len)
+                color: str = ""
+
+                if (array_index, num_index) in self.sort_control.pointers:
+                    if self.sort_control.pointers[(array_index, num_index)] == READ:
+                        color = "white"
+                    else:
+                        color = "black"
+                else:
+                    color = rainbow_color(num, self.sort_control.main_array_len)
 
                 self.canvas.create_rectangle(x0,
                                              y0,
