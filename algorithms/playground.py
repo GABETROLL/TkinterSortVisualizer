@@ -12,6 +12,12 @@ class SortPlayground:
         self.arrays = [list(range(1, main_array_len + 1))]
         self.pointers: dict[Pointer, PointerType] = {}
 
+        self.named_pointers: dict[str, Pointer] = {}
+        """
+        Pointers that show up as arrows with names that point to elements in arrays.
+        Dictionary of the names of the pointers, and the pointers themselves.
+        """
+
         self.swaps: int = 0
         self.comparisons: int = 0
         self.reads: int = 0
