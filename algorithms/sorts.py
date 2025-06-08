@@ -1828,12 +1828,6 @@ How did this happen?""")
             block_index_in_main_array(total_perfect_blocks),
         )
 
-        # Spawn array that keeps track of which blocks are A blocks,
-        # and which blocks are B blocks.
-
-        self.playground.spawn_new_array(total_perfect_blocks)
-        yield
-
         BLOCK_TYPES_ARRAY_INDEX = 1
         A = 0
         B = 1
@@ -1848,11 +1842,6 @@ How did this happen?""")
             # print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
             self.playground.write(B, (BLOCK_TYPES_ARRAY_INDEX, block_index))
             yield
-
-        # Spawn the movement imitation array for the A blocks
-
-        self.playground.spawn_new_array(total_perfect_a_blocks)
-        yield
 
         A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX = 2
 
@@ -2016,15 +2005,6 @@ How did this happen?""")
         del self.playground.named_pointers["dropped A's"]
         del self.playground.named_pointers["smallest A-block"]
 
-        self.playground.delete_array(A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX)
-        yield
-
-        # INDIVIDUAL MERGES PORTION:
-        # print("INDIVIDUAL MERGES TIME")
-
-        self.playground.spawn_new_array(block_size)
-        yield
-
         BLOCK_MERGES_AUX_ARRAY_INDEX = A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX
         # one replaced the other
 
@@ -2056,17 +2036,34 @@ How did this happen?""")
         for _ in self.merge_halves_semi_in_place(start, self.playground.named_pointers["blocks start"][1], self.playground.named_pointers["end"][1], BLOCK_MERGES_AUX_ARRAY_INDEX):
             yield
 
-        self.playground.delete_array(BLOCK_MERGES_AUX_ARRAY_INDEX)
-        yield
-        self.playground.delete_array(BLOCK_TYPES_ARRAY_INDEX)
-        yield
-
     def run(self):
         """
         TODO: THE LAST BLOCKS TO MERGE MAY HAVE
         AN IRREGULAR SIZE. THIS MAY CAUSE BUGS.
         """
         merge_len: int = 2
+
+        # In the last iteration, since the size of each block is
+        # int(sqrt(self.playground.main_array_len)),
+        # and the amount of perfect blocks can also be UP TO
+        # int(sqrt(self.playground.main_array_len)),
+        #
+        # `self.merge_mostly_equal_halves` will need
+        # a block types array of block_size,
+        # an a blocks movement imitation array of block_size
+        # and a merging aux array of block_size.
+        #
+        # Rather than deleting new arrays and creating new ones every iteration,
+        # which could cause seizures, and cause the audio controller to
+        # stop working (due to the aux arrays disappearing, and therefore,
+        # provoking the audio controller to try to read numbers from pointers
+        # to arrays that are no longer there),
+        # let's just reserve space for the last 2 arrays, and be resourceful
+        # with them the entire algorithm, only using their starting sections
+        # as we need them, and then delete them at the end!
+        final_block_size: int = int(sqrt(self.playground.main_array_len))
+        self.playground.spawn_new_array(final_block_size)
+        self.playground.spawn_new_array(final_block_size)
 
         while True:
             # print(f"Iteration of merges: {merge_len = } {halves_len = }")
@@ -2098,12 +2095,9 @@ How did this happen?""")
                 break
 
             merge_len <<= 1
-        
-        """a_len: int = self.playground.main_array_len >> 1
-        b_len: int = self.playground.main_array_len - a_len
 
-        for _ in self.merge_mostly_equal_halves(0, a_len, b_len):
-            yield"""
+        self.playground.delete_array(-1)
+        self.playground.delete_array(-1)
 
 
 class Concurrent(Algorithm):
