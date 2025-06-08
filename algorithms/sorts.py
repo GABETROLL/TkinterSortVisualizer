@@ -710,15 +710,15 @@ class MergeSort(Algorithm):
         When the right side is done first, just keep copying the left side.
         It's possible to not even change much of the code.
         """
-        assert 1 < copy_array_index and copy_array_index in range(self.playground.array_count)
+        assert 1 <= copy_array_index and copy_array_index in range(self.playground.array_count),\
+            f"{copy_array_index = }, {self.playground.array_count}"
+
         assert start <= midpoint <= end and start < end, f"{start = }, {midpoint = }, {end = }"
 
         first_half_len: int = midpoint - start
 
         for _ in self.playground.copy_array_slice(0, start, copy_array_index, 0, first_half_len):
             yield
-
-        print("COPIED")
 
         left_index: int = 0
         right_index: int = midpoint
@@ -766,9 +766,9 @@ class MergeSort(Algorithm):
 
         midpoint: int = start + (section_length >> 1)
 
-        for _ in self._merge_sort(start, midpoint):
+        for _ in self._merge_sort(start, midpoint, merge_method):
             yield
-        for _ in self._merge_sort(midpoint, end):
+        for _ in self._merge_sort(midpoint, end, merge_method):
             yield
 
         for _ in merge_method(start, midpoint, end, 1):
@@ -779,7 +779,7 @@ class MergeSort(Algorithm):
         merge_method: Callable[[int, int, int], Generator[None, None, None]] = self.merge_halves_out_of_place
 
         if self.options["semi-in-place"].value:
-            aux_array_len >>= 1 + 1  # + 1 just in case
+            aux_array_len = (aux_array_len >> 1) + 1  # + 1 just in case
             merge_method = self.merge_halves_semi_in_place
 
         self.playground.spawn_new_array(aux_array_len)
@@ -1767,7 +1767,7 @@ How did this happen?""")
         TODO: TEST
         """
         total_len: int = a_len + b_len
-        end: int = start + total_len
+        self.playground.named_pointers["end"] = (0, start + total_len)
 
         # BLOCK MERGE PORTION:
 
@@ -1813,14 +1813,15 @@ How did this happen?""")
         #
         # The total amount of perfect blocks, therefore, is ONLY
         # the total perfect a blocks, and the total perfect b blocks.
-        blocks_start_index: int = start + a_len % block_size
+        self.playground.named_pointers["blocks start"] = (0, start + a_len % block_size)
         total_perfect_a_blocks: int = a_len // block_size
         total_perfect_b_blocks: int = b_len // block_size
         total_perfect_blocks: int = total_perfect_a_blocks + total_perfect_b_blocks
 
-        blocks_end_index: int = blocks_start_index + total_perfect_blocks * block_size
-
-        print(f"{total_len = }, {end = }, {block_size = }, {blocks_start_index = }, {total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+        self.playground.named_pointers["blocks end"] = (
+            0,
+            self.playground.named_pointers["blocks start"][1] + total_perfect_blocks * block_size
+        )
 
         # Spawn array that keeps track of which blocks are A blocks,
         # and which blocks are B blocks.
@@ -1832,14 +1833,14 @@ How did this happen?""")
         A = 0
         B = 1
 
-        print(f"{total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
+        # print(f"{total_perfect_a_blocks = }, {total_perfect_b_blocks = }, {total_perfect_blocks = }")
 
         for block_index in range(total_perfect_a_blocks):
-            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            # print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
             self.playground.write(A, (BLOCK_TYPES_ARRAY_INDEX, block_index))
             yield
         for block_index in range(total_perfect_a_blocks, total_perfect_a_blocks + total_perfect_b_blocks):
-            print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
+            # print(f"Writing block types: {block_index = }, {self.playground.arrays[BLOCK_TYPES_ARRAY_INDEX]}")
             self.playground.write(B, (BLOCK_TYPES_ARRAY_INDEX, block_index))
             yield
 
@@ -1854,125 +1855,172 @@ How did this happen?""")
             self.playground.write(block_index, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, block_index))
             yield
 
-        a_blocks_range_in_blocks: range = range(0, total_perfect_a_blocks)
+        self.playground.named_pointers["types A start"] = (BLOCK_TYPES_ARRAY_INDEX, 0)
+        self.playground.named_pointers["types A end"] = (BLOCK_TYPES_ARRAY_INDEX, total_perfect_a_blocks)
         """
         The slice amongst the BLOCKS where the a-blocks that have not been dropped yet
         currently are.
-        The indeces in the range are the indices of THE BLOCKS, NOT THE INDIVIDUAL ELEMENTS.
+        The indices in the range are the indices of THE BLOCKS, NOT THE INDIVIDUAL ELEMENTS.
         """
-        dropped_a_blocks: int = 0
+        self.playground.named_pointers["dropped A's"] = (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, 0)
+
+
+        def block_index_in_main_array(index: int) -> int:
+            return self.playground.named_pointers["blocks start"][1] + index * block_size
+
 
         # Merge blocks by roll and drop
-        while len(a_blocks_range_in_blocks):
+        while self.playground.named_pointers["types A end"][1] - self.playground.named_pointers["types A start"][1]:
             # Find the smallest A-block through the movement imitation array.
             # The movement imitation array is needed to force stability
             # onto the A-blocks.
-            smallest_a_block_index_in_a_blocks: int = 0
-            for imitation_index in range(dropped_a_blocks, total_perfect_a_blocks):
+            self.playground.named_pointers[
+                "smallest A-block"
+            ] = self.playground.named_pointers["dropped A's"]
+            for imitation_index in range(self.playground.named_pointers["dropped A's"][1], total_perfect_a_blocks):
                 found_new_smallest: bool = self.playground.compare(
                     (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, imitation_index),
                     "<",
-                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, smallest_a_block_index_in_a_blocks),
+                    self.playground.named_pointers["smallest A-block"],
                 )
                 yield
 
                 if found_new_smallest:
-                    smallest_a_block_index_in_a_blocks = imitation_index
+                    self.playground.named_pointers["smallest A-block"] = (
+                        A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX,
+                        imitation_index
+                    )
 
-            a_blocks_start_index: int = blocks_start_index + a_blocks_range_in_blocks.start * block_size
-            smallest_a_block_start_index: int = a_blocks_start_index + smallest_a_block_index_in_a_blocks * block_size
+            self.playground.named_pointers["A start"] = (
+                0,
+                block_index_in_main_array(self.playground.named_pointers["types A start"][1]),
+            )
+            self.playground.named_pointers["A"] = (
+                0,
+                self.playground.named_pointers["A start"][1]
+                    + (
+                        self.playground.named_pointers["smallest A-block"][1]
+                        - self.playground.named_pointers["dropped A's"][1]
+                    ) * block_size,
+            )
             """
             index to read smallest A-block's value
             """
 
-            next_b_block_index_in_blocks: int = a_blocks_range_in_blocks.stop
-            next_b_block_start_index: int = blocks_start_index + next_b_block_index_in_blocks * block_size
-            next_b_block_final_index: int = next_b_block_start_index + block_size - 1
+            self.playground.named_pointers["next B"] = (
+                0,
+                block_index_in_main_array(self.playground.named_pointers["types A end"][1]),
+            )
+            self.playground.named_pointers["B"] = (
+                0,
+                self.playground.named_pointers["next B"][1]
+                    + block_size - 1,
+            )
             """
             index to read next b-block's value
             """
 
-            print(f"Checking should drop: {a_blocks_range_in_blocks = }, {dropped_a_blocks = }, {self.playground.arrays[A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX] = } {smallest_a_block_index_in_a_blocks = }, {a_blocks_start_index = }, {smallest_a_block_start_index = }, {next_b_block_index_in_blocks = }, {next_b_block_start_index = }, {next_b_block_final_index = }")
-
             should_drop: bool = False
 
-            if next_b_block_start_index >= blocks_end_index:
+            if self.playground.named_pointers["next B"][1] >= self.playground.named_pointers["blocks end"][1]:
                 should_drop = True
             else:
-                # The next b block *SHOULD* be entirely before the blocks_end_index,
-                # if next_b_block_start_index < blocks_end_index.
+                # The next b block *SHOULD* be entirely before the blocks end,
+                # if next B < blocks end.
                 # TODO: Proof? Account for edge case?
-                should_drop: bool = self.playground.compare((0, smallest_a_block_start_index), "<=", (0, next_b_block_final_index))
+                # print(f"{A = }, {next B = }, {B = }, {blocks end = }")
+                should_drop: bool = self.playground.compare(
+                    self.playground.named_pointers["A"],
+                    "<=",
+                    self.playground.named_pointers["B"],
+                )
                 yield
 
             if should_drop:
 
-                print(f"Should drop: {a_blocks_start_index = }, {smallest_a_block_start_index = }, {block_size = }")
+                # print(f"Should drop: {A start = }, {A = }, {block_size = }")
 
                 # swap blocks
                 # May accidentally be itself! But it probably won't cause an error (?).
-                for _ in self.swap_sections(a_blocks_start_index, smallest_a_block_start_index, block_size):
+                for _ in self.swap_sections(
+                    self.playground.named_pointers["A start"][1],
+                    self.playground.named_pointers["A"][1],
+                    block_size,
+                ):
                     yield
 
                 # Notify these changes to the aux arrays:
                 #
                 # Since we swapped two A-blocks, we don't need to write any change to the
                 # block types array
-                # 
+                #
+                # Swap the two A-blocks in the A-blocks imitation array:
                 self.playground.swap(
-                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, dropped_a_blocks),
-                    (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, smallest_a_block_index_in_a_blocks),
+                    self.playground.named_pointers["dropped A's"],
+                    self.playground.named_pointers["smallest A-block"],
                 )
                 yield
 
                 # drop a-block
-                a_blocks_range_in_blocks = range(
-                    a_blocks_range_in_blocks.start + 1,
-                    a_blocks_range_in_blocks.stop,
-                    a_blocks_range_in_blocks.step,
+                self.playground.named_pointers["types A start"] = (
+                    self.playground.named_pointers["types A start"][0],
+                    self.playground.named_pointers["types A start"][1] + 1
                 )
 
                 # Stop caring about the block in the imitation array (?)
-                dropped_a_blocks += 1
+                self.playground.named_pointers["dropped A's"] = (
+                    self.playground.named_pointers["dropped A's"][0],
+                    self.playground.named_pointers["dropped A's"][1] + 1,
+                )
             else:
                 # Roll the first A-block
-                for _ in self.swap_sections(a_blocks_start_index, next_b_block_start_index, block_size):
+                for _ in self.swap_sections(
+                    self.playground.named_pointers["A start"][1],
+                    self.playground.named_pointers["next B"][1],
+                    block_size,
+                ):
                     yield
-                
+
                 # Notify aux arrays of the changes
                 # block types array:
                 self.playground.swap(
-                    (BLOCK_TYPES_ARRAY_INDEX, a_blocks_range_in_blocks.start),
-                    (BLOCK_TYPES_ARRAY_INDEX, next_b_block_index_in_blocks),
+                    self.playground.named_pointers["types A start"],
+                    self.playground.named_pointers["types A end"],
                 )
                 yield
-                
+
                 # Roll the block's order indices in the movement imitation array:
-                temp: int = self.playground.read((A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, 0))
+                temp: int = self.playground.read(self.playground.named_pointers["dropped A's"])
                 yield
 
-                for index in range(len(a_blocks_range_in_blocks) - 1):
+                for index in range(self.playground.named_pointers["dropped A's"][1], total_perfect_a_blocks - 1):
                     next_num: int = self.playground.read((A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, index + 1))
                     yield
 
                     self.playground.write(next_num, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, index))
                     yield
-                self.playground.write(temp, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, len(a_blocks_range_in_blocks) - 1))
+                self.playground.write(temp, (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, total_perfect_a_blocks - 1))
                 yield
 
                 # MOVE THE A-BLOCKS RANGE IN BLOCKS INDICES FOWARD BY 1:
 
-                a_blocks_range_in_blocks = range(
-                    a_blocks_range_in_blocks.start + 1,
-                    a_blocks_range_in_blocks.stop + 1,
-                    a_blocks_range_in_blocks.step,
+                self.playground.named_pointers["types A start"] = (
+                    self.playground.named_pointers["types A start"][0],
+                    self.playground.named_pointers["types A start"][1] + 1,
                 )
+                self.playground.named_pointers["types A end"] = (
+                    self.playground.named_pointers["types A end"][0],
+                    self.playground.named_pointers["types A end"][1] + 1,
+                )
+
+        del self.playground.named_pointers["dropped A's"]
+        del self.playground.named_pointers["smallest A-block"]
 
         self.playground.delete_array(A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX)
         yield
 
         # INDIVIDUAL MERGES PORTION:
-        print("INDIVIDUAL MERGES TIME")
+        # print("INDIVIDUAL MERGES TIME")
 
         self.playground.spawn_new_array(block_size)
         yield
@@ -1981,28 +2029,31 @@ How did this happen?""")
         # one replaced the other
 
         # #|# # # #|# # # #|# # # #|# # # #|# #
-        #                                   ^ blocks_end
+        #                                   ^ blocks end
         #                                       ^ end
         #                           ^ first `join_index` (defined below)
-        # If there are more elements past the blocks before the `blocks_end` index,
+        # If there are more elements past the blocks before the `blocks end` index,
         # the MUST(?) be remaining elements from the B-half,
         # and there MUST(?) be, in total, less than `block_size` of them.
-        # extra, undersized block at the end of the blocks,
-        # just append it to the sorted section!
+        # Just append them to the sorted section!
         #
         # After this, we need to merge the extra elements from the A-half at the start.
-        for join_index in range(blocks_end_index - block_size, blocks_start_index - 1, -block_size):
-            print(f"Merging: {join_index = }, {blocks_end_index = } => start = {join_index}, midpoint = {join_index + block_size}, end = {end}")
-            for _ in self.merge_halves_semi_in_place(join_index, join_index + block_size, end, BLOCK_MERGES_AUX_ARRAY_INDEX):
+        for join_index in range(
+            self.playground.named_pointers["blocks end"][1] - block_size,
+            self.playground.named_pointers["blocks start"][1] - 1,
+            -block_size,
+        ):
+            # print(f"Merging: {join_index = }, {blocks end = } => start = {join_index}, midpoint = {join_index + block_size}, end = {end}")
+            for _ in self.merge_halves_semi_in_place(join_index, join_index + block_size, self.playground.named_pointers["end"][1], BLOCK_MERGES_AUX_ARRAY_INDEX):
                 yield
             # This may actually stop early if the blocks only need to be prepended directly
             # to the merged section! TODO: check
 
         # Merge the extra blocks from the A half:
-        assert blocks_start_index - start < block_size
+        assert self.playground.named_pointers["blocks start"][1] - start < block_size
         # (Because the extra blocks from the A half have to be strictly less than `block_size`,
         # we can use the block merges aux array to merge them with the rest of the section!)
-        for _ in self.merge_halves_semi_in_place(start, blocks_start_index, end, BLOCK_MERGES_AUX_ARRAY_INDEX):
+        for _ in self.merge_halves_semi_in_place(start, self.playground.named_pointers["blocks start"][1], self.playground.named_pointers["end"][1], BLOCK_MERGES_AUX_ARRAY_INDEX):
             yield
 
         self.playground.delete_array(BLOCK_MERGES_AUX_ARRAY_INDEX)
@@ -2017,22 +2068,34 @@ How did this happen?""")
         """
         merge_len: int = 2
 
-        while merge_len <= self.playground.main_array_len:
-            halves_len: int = merge_len >> 1
+        while True:
+            # print(f"Iteration of merges: {merge_len = } {halves_len = }")
 
-            print(f"Iteration of merges: {merge_len = } {halves_len = }")
+            #|# #|# #|# #|# #|# #|# #|# #|# #|# #|
+            #|# # # #|# # # #|# # # #|# # # #|# #    |
+            #|# # # # # # # #|# # # # # # # #|# #            |
+            #|# # # # # # # # # # # # # # # #|# #                            |
+            #|# # # # # # # # # # # # # # # # # #                            |
 
             for merge_start_index in range(0, self.playground.main_array_len, merge_len):
-                merge_end: int = min(self.playground.main_array_len, merge_start_index + merge_len)
-                true_merge_len: int = merge_end - merge_start_index
+                midpoint: int = merge_start_index + (merge_len >> 1)
+                end: int = merge_start_index + merge_len
 
-                a_len: int = true_merge_len >> 1
-                b_len: int = true_merge_len - a_len
+                if midpoint >= self.playground.main_array_len:
+                    continue
 
-                print(f"Merging: {merge_start_index = } {merge_end = } {true_merge_len = } {a_len = } {b_len = }")
+                true_end: int = min(self.playground.main_array_len, end)
+
+                a_len: int = midpoint - merge_start_index
+                b_len: int = true_end - midpoint
+
+                # print(f"Merging: {merge_start_index = } {merge_end = } {true_merge_len = } {a_len = } {b_len = }")
 
                 for _ in self.merge_mostly_equal_halves(merge_start_index, a_len, b_len):
                     yield
+
+            if merge_len >= self.playground.main_array_len:
+                break
 
             merge_len <<= 1
         
