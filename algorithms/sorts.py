@@ -1818,9 +1818,14 @@ How did this happen?""")
         total_perfect_b_blocks: int = b_len // block_size
         total_perfect_blocks: int = total_perfect_a_blocks + total_perfect_b_blocks
 
+
+        def block_index_in_main_array(index: int) -> int:
+            return self.playground.named_pointers["blocks start"][1] + index * block_size
+
+
         self.playground.named_pointers["blocks end"] = (
             0,
-            self.playground.named_pointers["blocks start"][1] + total_perfect_blocks * block_size
+            block_index_in_main_array(total_perfect_blocks),
         )
 
         # Spawn array that keeps track of which blocks are A blocks,
@@ -1863,11 +1868,6 @@ How did this happen?""")
         The indices in the range are the indices of THE BLOCKS, NOT THE INDIVIDUAL ELEMENTS.
         """
         self.playground.named_pointers["dropped A's"] = (A_BLOCKS_MOVEMENT_IMITATION_ARRAY_INDEX, 0)
-
-
-        def block_index_in_main_array(index: int) -> int:
-            return self.playground.named_pointers["blocks start"][1] + index * block_size
-
 
         # Merge blocks by roll and drop
         while self.playground.named_pointers["types A end"][1] - self.playground.named_pointers["types A start"][1]:
