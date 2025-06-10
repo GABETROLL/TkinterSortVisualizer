@@ -62,7 +62,9 @@ I also am planning to:
 - Add different sound waves/sounds in general
 - Add different theming options to make things easier to see, or for preference
 - Show steps more explicitly and easier to understand for beginners
+- Display messages and statuses of the steps the algorithms are making, for debugging and learning
 - Display statistics of different operations, and even the time it really takes for algorithms to finish, so the users get a better sense of scale for the algorithms, and their different operations
+- Make better use of the verification step of the program
 - Correct the inaccurate ways the statistics are currently being counted
 - Add more, and more, and more, AND MORE SORTING ALGORITHMS!!!!!!!!!!
 
