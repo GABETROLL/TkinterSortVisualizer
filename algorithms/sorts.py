@@ -2332,6 +2332,89 @@ class ParallelOddEvenMergeSort(Concurrent):
             merge_len <<= 1                
 
 
+class TimeSort(Algorithm):
+    """Time Sort (Manual)"""
+    def run(self):
+        COPY_ARRAY_INDEX = 1
+        TIMES_ARRAY_INDEX = 2
+
+        self.playground.spawn_new_array(self.playground.main_array_len)
+        yield
+        self.playground.spawn_new_array(self.playground.main_array_len)
+        yield
+
+        for _ in self.playground.copy_array(0, COPY_ARRAY_INDEX):
+            yield
+        for _ in self.playground.copy_array(0, TIMES_ARRAY_INDEX):
+            yield
+
+        TIME_ENDS = 1
+        ALREADY_WRITTEN = 0
+
+        # Time Sort works by making two copies of the original array,
+        # one to preserve the original, and one that indicates how much "time"
+        # to wait before inserting each corresponding number in the main array.
+        # Since lower numbers would have to wait less "time" before being inserted,
+        # this would cause the list to sort itself. Each iteration of this algorithm,
+        # every number who's time is `TIME_ENDS` would be inserted in the main array
+        # and decremented one last time,
+        # and every other number's time would be decremented by one.
+        # If a time is `ALREADY_WRITTEN`, it will not be decremented anymore,
+        # to prevent negative numbers from glitching the frontend.
+        #
+        # However, some numbers in the main array may be 0 or even negative!
+        # Although I don't want this to happen, and the current app
+        # doesn't write negative numbers to the main array as inputs,
+        #
+        # In real life, this sorting algorithm would need to work,
+        # even for those numbers!
+        #
+        # So, we find the index of the minimum num in the main array,
+        # and we "slide" all of the numbers toward the positive side
+        # of the number line, so that the minimum number's time is now `TIME_ENDS`.
+        # This is just subtracting the minimum number from all the numbers
+        # in the array and adding `TIME_ENDS`, so that the min num itself is now `TIME_ENDS`,
+        # because it was cancelled, and every other number is above or equal to `TIME_ENDS`.
+        minimum_index: int = 0
+        for scanning_index in range(self.playground.main_array_len):
+            new_min_found: bool = self.playground.compare((0, scanning_index), "<", (0, minimum_index))
+            yield
+
+            if new_min_found:
+                minimum_index = scanning_index
+
+        minimum_num: int = self.playground.read((0, minimum_index))
+
+        for scanning_index in range(self.playground.main_array_len):
+            self.playground.increment(-minimum_num + TIME_ENDS, (TIMES_ARRAY_INDEX, scanning_index))
+            yield
+
+        # Write with the times!
+        writing_index: int = 0
+
+        while writing_index < self.playground.main_array_len:
+            for scanning_index in range(self.playground.main_array_len):
+                time: int = self.playground.read((TIMES_ARRAY_INDEX, scanning_index))
+                yield
+
+                # If a number was already written, its time would be less than `TIME_ENDS`,
+                # and so it won't ever be written again! So, we don't even need a comparison,
+                # just keep decrementing! I believe just decrementing is faster than an `if`,
+                # because `if`s are very slow for CPU's!
+
+                if time == TIME_ENDS:
+                    num: int = self.playground.read((COPY_ARRAY_INDEX, scanning_index))
+                    yield
+                    self.playground.write(num, (0, writing_index))
+                    yield
+                    self.playground.write(ALREADY_WRITTEN, (TIMES_ARRAY_INDEX, scanning_index))
+                    yield
+                    writing_index += 1
+                elif time != ALREADY_WRITTEN:
+                    self.playground.increment(-1, (TIMES_ARRAY_INDEX, scanning_index))
+                    yield
+
+
 class SlowSort(Algorithm):
     """Slow Sort"""
     def slow(self, start: int, amount: int):
@@ -2395,4 +2478,5 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          SquareRootSort,
          BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
          OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
+         TimeSort,
          SlowSort, BogoSort]
