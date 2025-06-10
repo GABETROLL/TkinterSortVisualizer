@@ -5,19 +5,28 @@ WARNING!!
 
 PLAYING THIS VISUALIZER CAN CAUSE SEIZURES, OVERSTIMULATION, HEADACHES, ETC, AND IS VERY OVERWHELMING TO THE SENSES. IT CONTAINS COLORED BARS MOVING AT 60+FPS, AND UNCOMFORTABLE SOUNDS.
 
-<img src="sorting_screenshot.png" />
+<img src="playing_quick_sort.png" />
 
 ## Motivation
 Around 2022, I developed a special interest in sorting algorithms. I watched many YouTube videos that visualized sorting algorithms, and used pitch to 'audify' each number in the arrays being sorted. I saw lots of different sorting algorithm visualizers and visualization videos, all with their own features that I liked and disliked. 
 
 I wanted to create a sorting algorithm visualizer myself, as a challenge. And I wanted it to be the perfect balance of all the visualizers I had seen in the internet. That's why I included many options for algorithms, inputs and speeds. This program aims at providing lots of flexibility  and interactivity with the algorithms, even if it breaks!
 ## Features
+<img width=25% src="playing_radix_sort.png">
+
 - Bar graph display for the array to sort (with colors!)
 - Audio representations of numbers (A corresponding pitch plays when a number is written or read)
 - Choosing the size of the array
-- Choosing inputs for the sorting algorithms
-- Choosing sorting algorithms themselves
-- Choosing related options (like, for example, the base for Radix Sort)
+
+<img width=25% src="choosing_input.png">
+<img width=25% src="choosing_shuffle.png">
+
+- Being able to choose different combinations of inputs, shuffles, and sorts!
+
+<img width=25% src="choosing_base_option.png">
+<img width=25% src="choosing_checkbutton_option.png">
+
+- Different bases, options and configurations to try on sorts!
 - Pause/Play
 - Changing the speed of the algorithms (This is great to get an intuition on the Big O of the different algorithms, and gives you a sense of scale on how these algorithms make progress!)
 - Labeled pointers (Arrows pointing at positions in arrays, to show what the algorithms are keeping track of)
