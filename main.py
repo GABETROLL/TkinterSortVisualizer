@@ -617,7 +617,7 @@ class SortApp(tkinter.Tk):
         self.input_menu_frame.pack(fill=tkinter.X)
         self.shuffle_menu_frame.pack(fill=tkinter.X)
 
-        tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
+        tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1088, orient=tkinter.HORIZONTAL).pack()
 
         tkinter.Button(self, text="OK", command=self.exit_settings).pack()
 

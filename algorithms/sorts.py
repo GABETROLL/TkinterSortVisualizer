@@ -1772,8 +1772,6 @@ How did this happen?""")
         # BLOCK MERGE PORTION:
 
         block_size: int = int(sqrt(total_len))
-        # total_elements_in_perfect_blocks: int = block_size ** 2
-
         # If we split the slice in the array with the two halves to merge
         # (it's [start, start + total_len) into `block_size` blocks,
         # each containing `block_size` elements, it's possible that
@@ -2002,6 +2000,12 @@ How did this happen?""")
                     self.playground.named_pointers["types A end"][1] + 1,
                 )
 
+        del self.playground.named_pointers["types A start"]
+        del self.playground.named_pointers["types A end"]
+        del self.playground.named_pointers["A start"]
+        del self.playground.named_pointers["A"]
+        del self.playground.named_pointers["next B"]
+        del self.playground.named_pointers["B"]
         del self.playground.named_pointers["dropped A's"]
         del self.playground.named_pointers["smallest A-block"]
 
@@ -2036,6 +2040,10 @@ How did this happen?""")
         for _ in self.merge_halves_semi_in_place(start, self.playground.named_pointers["blocks start"][1], self.playground.named_pointers["end"][1], BLOCK_MERGES_AUX_ARRAY_INDEX):
             yield
 
+        del self.playground.named_pointers["end"]
+        del self.playground.named_pointers["blocks start"]
+        del self.playground.named_pointers["blocks end"]
+
     def run(self):
         """
         TODO: THE LAST BLOCKS TO MERGE MAY HAVE
@@ -2044,9 +2052,10 @@ How did this happen?""")
         merge_len: int = 2
 
         # In the last iteration, since the size of each block is
-        # int(sqrt(self.playground.main_array_len)),
-        # and the amount of perfect blocks can also be UP TO
-        # int(sqrt(self.playground.main_array_len)),
+        # int(sqrt(self.playground.main_array_len)).
+        # The amount of PERFECT blocks in the last iteration
+        # can therefore be UP TO
+        # self.playground.main_array_len // int(sqrt(self.playground.main_array_len))
         #
         # `self.merge_mostly_equal_halves` will need
         # a block types array of block_size,
@@ -2062,8 +2071,9 @@ How did this happen?""")
         # with them the entire algorithm, only using their starting sections
         # as we need them, and then delete them at the end!
         final_block_size: int = int(sqrt(self.playground.main_array_len))
-        self.playground.spawn_new_array(final_block_size)
-        self.playground.spawn_new_array(final_block_size)
+        final_total_perfect_blocks: int = self.playground.main_array_len // final_block_size
+        self.playground.spawn_new_array(final_total_perfect_blocks)
+        self.playground.spawn_new_array(final_total_perfect_blocks)
 
         while True:
             # print(f"Iteration of merges: {merge_len = } {halves_len = }")
