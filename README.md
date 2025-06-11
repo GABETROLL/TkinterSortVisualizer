@@ -78,7 +78,7 @@ I also am planning to:
 - Add more, and more, and more, AND MORE SORTING ALGORITHMS!!!!!!!!!!
 
 ## Contribution
-Currently, this project isn't complete. It still lacks a lot of UI features, and the sound isn't as great as envisioned. I plan to keep adding more and more sorting algorithms, which I priorizite over the GUI. If you want to contribute, I'd love to see your ideas!
+Currently, this project isn't complete. It still lacks a lot of UI features, and the sound isn't as great as envisioned. I plan to keep adding more and more sorting algorithms, which I prioritize over the GUI. If you want to contribute, I'd love to see your ideas!
 ## Installation
 First, make sure you have Python 3 installed. I recommend Python3.9 or higher.
 
