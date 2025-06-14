@@ -130,4 +130,5 @@ class SortPlayground:
         self.arrays[index_a[0]][index_a[1]], self.arrays[index_b[0]][index_b[1]] = \
             self.arrays[index_b[0]][index_b[1]], self.arrays[index_a[0]][index_a[1]]
         self.swaps += 1
+        self.reads += 1
         self.writes += 2
