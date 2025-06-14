@@ -115,7 +115,9 @@ class InsertionSort(Algorithm):
     """Insertion Sort"""
     def _run(self, start: int, end: int):
         for unsorted_start_index in range(start + 1, end):
-            # print(f"{unsorted_start_index = }")
+            
+            self.playground.named_pointers["unsorted start"] = (0, unsorted_start_index)
+
             index: int = unsorted_start_index
 
             while start < index and self.playground.compare((0, index - 1), ">", (0, index)):
@@ -127,6 +129,8 @@ class InsertionSort(Algorithm):
                 yield
 
                 index -= 1
+
+        del self.playground.named_pointers["unsorted start"]
 
     def run(self):
         return self._run(0, self.playground.main_array_len)
