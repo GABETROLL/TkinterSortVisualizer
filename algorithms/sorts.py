@@ -4,6 +4,7 @@ from typing import Iterable, Callable, Generator
 from itertools import count, chain, cycle
 from dataclasses import dataclass, field
 from math import sqrt, floor
+from random import randint
 
 class BubbleSort(Algorithm):
     """Bubble Sort"""
@@ -2479,6 +2480,28 @@ class BogoSort(Verify, Shuffle):
                 yield
 
 
+class BozoSort(Verify):
+    """Bozo Sort"""
+    def run(self):
+        while True:
+            self.sorted = True
+
+            for _ in Verify.run(self):
+                yield
+
+            if self.sorted:
+                break
+
+            # There's a posibility that we pick the same index to swap,
+            # meaning a piece would swap with itself,
+            # and we would have wasted a round.
+            a_index: int = randint(0, self.playground.main_array_len - 1)
+            b_index: int = randint(0, self.playground.main_array_len - 1)
+
+            self.playground.swap((0, a_index), (0, b_index))
+            yield
+
+
 sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailShakerSort, OddEvenSort,
          InsertionSort, BaiaiSort, CircleSort, IterativeCircleSort, CombSort, ExchangeSort,
          SelectionSort, MaxHeapSort, MinHeapSort, OptimizedMaxHeapSort, OptimizedMinHeapSort,
@@ -2489,4 +2512,4 @@ sorts = [BubbleSort, OptimizedBubbleSort, CocktailShakerSort, OptimizedCocktailS
          BatchersBitonicSort, IRBitonicSort, IterativeBitonicSort, PairwiseSortingNetwork,
          OddEvenMergesort, IROddEvenMergesort, IterativeOddEvenMergesort,
          TimeSort,
-         SlowSort, BogoSort]
+         SlowSort, BogoSort, BozoSort]
