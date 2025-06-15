@@ -277,9 +277,9 @@ class Verify(Algorithm):
         nums = self.playground.main_array
 
         for index in range(len(nums) - 1):
-            check = self.playground.compare((0, index), ">", (0, index + 1))
+            pair_not_in_order = self.playground.compare((0, index), ">", (0, index + 1))
             yield
 
-            if check:
+            if pair_not_in_order:
                 self.sorted = False
                 break

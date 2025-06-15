@@ -273,12 +273,12 @@ class AlgorithmMenu:
 
         self.menu_data: MenuData = menu_data
 
-        self.variable = tkinter.Variable(master, menu_data.initial_value, menu_data.name)
         self.label = tkinter.Label(master, text=menu_data.name)
 
         # print(type(menu_data.allowed_values))
 
         if isinstance(menu_data.allowed_values, range):
+            self.variable = tkinter.IntVar(master, menu_data.initial_value, menu_data.name)
             self.menu = tkinter.Scale(
                 master,
                 variable=self.variable,
@@ -289,12 +289,14 @@ class AlgorithmMenu:
                 command=lambda value: self.menu_callback(int(value)),
             )
         elif all(isinstance(value, bool) for value in menu_data.allowed_values):
+            self.variable = tkinter.BooleanVar(master, menu_data.initial_value, menu_data.name)
             self.menu = tkinter.Checkbutton(
                 master,
                 variable=self.variable,
-                command=self.menu_callback,
+                command=lambda: self.menu_callback(bool(self.variable.get())),
             )
         else:
+            self.variable = tkinter.Variable(master, menu_data.initial_value, menu_data.name)
             self.menu = tkinter.OptionMenu(
                 master,
                 self.variable,
@@ -511,15 +513,24 @@ class SortApp(tkinter.Tk):
 
         self.canvas.delete("all")
 
-        # The goal here is to decide what the max number's height in the canvas will be,
-        # so that the rest of the numbers's heights are drawn in proportion to the max number.
+        # I want to display each array taking equal space vertically, with
+        # the main array at the bottom, and each new extra array higher and higher.
+        # But, I want to display the pointers in `self.sort_control.named_pointers`
+        # in a space below each array, which would take some percent of the array's
+        # space at the bottom.
         #
-        # I want to display all arrays taking up equal space in the height of the canvas,
-        # with the main array at the bottom, and each new array higher and higher.
-        # Therefore, the max height of a number in any array (`max_height`) is
-        # the height of the canvas divided by the amount of arrays.
-        bar_width = self.canvas.winfo_width() / (self.sort_control.main_array_len + 1)
-        max_height = self.canvas.winfo_height() / self.sort_control.array_count
+        # Since there are `self.sort_control.array_count` arrays, and the canvas
+        # has height `self.canvas.winfo_height()`, each array's "height" should be
+        # self.canvas.winfo_height() / self.sort_control.array_count.
+        #
+        # I also want the max number in the main array to be the full height of the space
+        # the arrays are given to display their numbers, and every other number
+        # will have height proportional to the max number. The max number is they arrays'
+        # "height" minus the percent reserved for the named pointers.
+        bar_width: float = self.canvas.winfo_width() / (self.sort_control.main_array_len + 1)
+        array_height: float = self.canvas.winfo_height() / self.sort_control.array_count
+        named_pointers_space_height: float = min(bar_width, array_height)
+        max_num_height: float = array_height - named_pointers_space_height
 
         for array_index, array in enumerate(self.sort_control.arrays):
 
@@ -532,7 +543,7 @@ class SortApp(tkinter.Tk):
                 # to prevent dividing by 0, set the height of that array in the canvas to 0,
                 # as if the array weren't even there.
                 try:
-                    height = max_height * num / self.sort_control.main_array_len
+                    height = max_num_height * num / self.sort_control.main_array_len
                     # Since the max number in the main array SHOULD BE
                     # no greater than the length of the main array,
                     #
@@ -543,11 +554,18 @@ class SortApp(tkinter.Tk):
                 x0 = num_index * bar_width
                 x1 = x0 + bar_width
 
-                y0 = self.canvas.winfo_height() - max_height * array_index
+                y0 = self.canvas.winfo_height() - array_height * (array_index + 1) + max_num_height
                 y1 = y0 - height
 
-                color = "black" if (array_index, num_index) in self.sort_control.pointers else \
-                    rainbow_color(num, self.sort_control.main_array_len)
+                color: str = ""
+
+                if (array_index, num_index) in self.sort_control.pointers:
+                    if self.sort_control.pointers[(array_index, num_index)] == READ:
+                        color = "white"
+                    else:
+                        color = "black"
+                else:
+                    color = rainbow_color(num, self.sort_control.main_array_len)
 
                 self.canvas.create_rectangle(x0,
                                              y0,
@@ -555,6 +573,24 @@ class SortApp(tkinter.Tk):
                                              y1,
                                              fill=color,
                                              outline=color)
+
+        # Since the pointers are in `self.sort_control`, which is another Thread,
+        # we need to copy the `named_pointers` dict before iterating over it,
+        # in case it changes while we're iterating over it.
+        for name, pointer in self.sort_control.named_pointers.copy().items():
+            array_index, num_index = pointer
+
+            triangle_left_x_pos: float = num_index * bar_width
+            triangle_top_y_pos: float = self.canvas.winfo_height() - array_index * array_height - named_pointers_space_height
+            triangle_bottom_y_pos: float = triangle_top_y_pos + (named_pointers_space_height / 2)
+
+            top_vertex: tuple[float, float] = (triangle_left_x_pos + (named_pointers_space_height / 2), triangle_top_y_pos)
+            left_vertex: tuple[float, float] = (triangle_left_x_pos, triangle_bottom_y_pos)
+            right_vertex: tuple[float, float] = (triangle_left_x_pos + bar_width, triangle_bottom_y_pos)
+
+            self.canvas.create_polygon([top_vertex, left_vertex, right_vertex], fill="black")
+            self.canvas.create_text((right_vertex[0], left_vertex[1]), text=name)
+
         self.canvas.update()
 
     def clear_screen(self):
@@ -581,7 +617,7 @@ class SortApp(tkinter.Tk):
         self.input_menu_frame.pack(fill=tkinter.X)
         self.shuffle_menu_frame.pack(fill=tkinter.X)
 
-        tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1024, orient=tkinter.HORIZONTAL).pack()
+        tkinter.Scale(self, from_=1, to=1024, variable=self.size_variable, length=1088, orient=tkinter.HORIZONTAL).pack()
 
         tkinter.Button(self, text="OK", command=self.exit_settings).pack()
 
