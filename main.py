@@ -28,24 +28,25 @@ def rainbow_color(num: int, max_num: int):
     return '#%02x%02x%02x' % (r, g, b)
 
 
-class SortControl(Thread, SortPlayground):
-    """Container for all sorts, settings and shuffles.
+class SortControl(Thread):
+    """Container for all sorts, settings, shuffles and the sort playground.
     Runs loop with algorithm coroutines during the main window mainloop.
     Controls playing and pausing."""
 
     def __init__(self, main_array_len: int, delay: float):
         Thread.__init__(self)
-        SortPlayground.__init__(self, main_array_len)
+
+        self.sort_playground: SortPlayground = SortPlayground(main_array_len)
 
         self.delay = delay
 
         self.sort_classes: dict[str, Algorithm] = {sort_cls.__doc__: sort_cls for sort_cls in sorts}
-        self.chosen_sort: Algorithm = BubbleSort(self)
+        self.chosen_sort: Algorithm = BubbleSort(self.sort_playground)
         self.input_classes: dict[str, Algorithm] = {input_cls.__doc__: input_cls for input_cls in inputs}
-        self.chosen_input: Algorithm = Linear(self)
+        self.chosen_input: Algorithm = Linear(self.sort_playground)
         self.shuffle_classes: dict[str, Algorithm] = {shuffle_cls.__doc__: shuffle_cls for shuffle_cls in shuffles}
-        self.chosen_shuffle: Algorithm = Shuffle(self)
-        self.verify_algorithm = Verify(self)
+        self.chosen_shuffle: Algorithm = Shuffle(self.sort_playground)
+        self.verify_algorithm = Verify(self.sort_playground)
         # Settings chosen by UI.
 
         self.chosen_algorithms: Iterable[None] = iter(())
@@ -58,12 +59,12 @@ class SortControl(Thread, SortPlayground):
         # data
 
     def reset(self):
-        """Resets self.chosen_algorithms and resets self as SortPlayground."""
+        """Resets self.chosen_algorithms and `self.sort_playground`."""
         self.chosen_algorithms = chain(self.chosen_input.run(),
                                        self.chosen_shuffle.run(),
                                        self.chosen_sort.run(),
                                        self.verify_algorithm.run())
-        SortPlayground.reset(self)
+        self.sort_playground.reset()
 
     def stop(self):
         self.playing = False
@@ -83,9 +84,9 @@ class SortControl(Thread, SortPlayground):
         input_cls: Algorithm = self.input_classes[name]
         
         self.chosen_input = (
-            input_cls(self, options)
+            input_cls(self.sort_playground, options)
             if options is not None
-            else input_cls(self)
+            else input_cls(self.sort_playground)
         )
 
         self.stop()
@@ -98,9 +99,9 @@ class SortControl(Thread, SortPlayground):
         shuffle_cls: Algorithm = self.shuffle_classes[name]
 
         self.chosen_shuffle = (
-            shuffle_cls(self, options)
+            shuffle_cls(self.sort_playground, options)
             if options is not None
-            else shuffle_cls(self)
+            else shuffle_cls(self.sort_playground)
         )
 
         self.stop()
@@ -113,9 +114,9 @@ class SortControl(Thread, SortPlayground):
         sort_cls: Algorithm = self.sort_classes[name]
 
         self.chosen_sort = (
-            sort_cls(self, options)
+            sort_cls(self.sort_playground, options)
             if options is not None
-            else sort_cls(self)
+            else sort_cls(self.sort_playground)
         )
 
         self.stop()
