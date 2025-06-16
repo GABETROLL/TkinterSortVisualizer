@@ -33,12 +33,12 @@ class SortControl(Thread):
     Runs loop with algorithm coroutines during the main window mainloop.
     Controls playing and pausing."""
 
-    def __init__(self, main_array_len: int, delay: float):
+    def __init__(self, main_array_len: int, delay: float) -> None:
         Thread.__init__(self)
 
         self.sort_playground: SortPlayground = SortPlayground(main_array_len)
 
-        self.delay = delay
+        self.delay: float = delay
 
         self.sort_classes: dict[str, Algorithm] = {sort_cls.__doc__: sort_cls for sort_cls in sorts}
         self.chosen_sort: Algorithm = BubbleSort(self.sort_playground)
@@ -54,11 +54,11 @@ class SortControl(Thread):
         self.reset()
         # define chain
 
-        self.exited = False
-        self.playing = False
+        self.exited: bool = False
+        self.playing: bool = False
         # data
 
-    def reset(self):
+    def reset(self) -> None:
         """Resets self.chosen_algorithms and `self.sort_playground`."""
         self.chosen_algorithms = chain(self.chosen_input.run(),
                                        self.chosen_shuffle.run(),
@@ -66,18 +66,38 @@ class SortControl(Thread):
                                        self.verify_algorithm.run())
         self.sort_playground.reset()
 
-    def stop(self):
+    def stop(self) -> None:
+        """
+        Sets `self.playing` to False, and calls `self.reset()`.
+        """
         self.playing = False
         self.reset()
         # To refresh coroutines when they amount.
 
-    def pause_play(self):
+    def pause_play(self) -> None:
+        """
+        Toggles `self.playing` between False and True.
+        """
         self.playing = not self.playing
 
-    def change_delay(self, s: float):
-        self.delay = s
+    def change_delay(self, seconds: float) -> None:
+        """
+        Sets `self.delay` to `seconds`.
+        """
+        self.delay = seconds
 
     def choose_input(self, name: str, options: dict[str, object] | None):
+        """
+        Chooses `self.chosen_input` to become the instance of
+        the algorithm class in `self.input_classes` with `name` as its
+        corresponding key, instantiating the Algorithm class with
+        `options` as the algorihm's `options` (See `Algorithm`).
+
+        Since the currently chosen algorithms may be running,
+        this method also calls `self.stop` to both stop running them,
+        and re-define `self.chosen_algorithms` to be based on
+        the chosen input.
+        """
         if not (name in self.input_classes):
             raise KeyError(f"Input '{name}' doesn't exist.")
         
@@ -93,6 +113,17 @@ class SortControl(Thread):
         # restart
 
     def choose_shuffle(self, name: str, options: dict[str, object] | None):
+        """
+        Chooses `self.chosen_shuffle` to become the instance of
+        the algorithm class in `self.shufle_classes` with `name` as its
+        corresponding key, instantiating the Algorithm class with
+        `options` as the algorihm's `options` (See `Algorithm`).
+
+        Since the currently chosen algorithms may be running,
+        this method also calls `self.stop` to both stop running them,
+        and re-define `self.chosen_algorithms` to be based on
+        the chosen shuffle.
+        """
         if not (name in self.shuffle_classes):
             raise KeyError(f"Shuffle '{name}' doesn't exist.")
 
@@ -108,6 +139,17 @@ class SortControl(Thread):
         # restart
 
     def choose_sort(self, name: str, options: dict[str, object] | None):
+        """
+        Chooses `self.chosen_sort` to become the instance of
+        the algorithm class in `self.sort_classes` with `name` as its
+        corresponding key, instantiating the Algorithm class with
+        `options` as the algorihm's `options` (See `Algorithm`).
+
+        Since the currently chosen algorithms may be running,
+        this method also calls `self.stop` to both stop running them,
+        and re-define `self.chosen_algorithms` to be based on
+        the chosen sort.
+        """
         if not (name in self.sort_classes):
             raise KeyError(f"Sort '{name}' doesn't exist.")
 
@@ -122,10 +164,31 @@ class SortControl(Thread):
         self.stop()
         # restart
 
-    def exit(self):
+    def exit(self) -> None:
+        """
+        Sets `self.exited` to True.
+        """
         self.exited = True
 
-    def run(self):
+    def run(self) -> None:
+        """
+        The mainloop of this Thread.
+
+        Keeps checking if `self.playing` is True.
+        If it is, this method executes the next step in `self.chosen_algorithms`,
+        by calling `next(self.chosen_algorithms)`.
+        Then, it sleeps for `self.delay` seconds, pausing execution to help the user
+        see each step of the algorithm in the GUI.
+
+        If it's not, it calls sleeps for `self.delay` seconds, anyways.
+        I'm not sure why it does that. If I had to guess, it'd be
+        giving the other Threads time to run.
+
+        These algorithms
+        are chained by `chain`, and they all yield None after every step.
+
+        The loop ends when `self.exited` has become True.
+        """
         while not self.exited:
 
             if self.playing:
