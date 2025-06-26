@@ -1,12 +1,41 @@
+from dataclasses import dataclass
+
 Pointer = tuple[int, int]
 PointerType = int
 
 READ: PointerType = 0
 WRITE: PointerType = 1
 
+
+@dataclass
+class Statistics:
+    swaps: int = 0
+    comparisons: int = 0
+    reads: int = 0
+    writes: int = 0
+    array_spawns: int = 0
+    array_deletions: int = 0
+    reversals: int = 0
+
+
 class SortPlayground:
-    """Playground for algorithms made of arrays.
-    Counts swaps, comparisons, writes and reversals."""
+    """
+    Playground for algorithms made of arrays.
+
+    Contains the arrays of data the sorting algorithms are using,
+    and several builin methods for swapping, comparing, reading,
+    writing, spawning and deleting arrays, copying slices of arrays,
+    and regarding the pointers.
+
+    Keeps track of how many times certain operations are done
+    (reading/writing values, comparisons, swaps, etc),
+    by incrementing counters in `self.statistics` each time
+    the operation is performed by one of the methods.
+
+    IF AN ALGORITHM DOES OPERATIONS MANUALLY,
+    THE STATISTICS ARE NOT COUNTED, AND NEED TO BE COUNTED
+    MANUALLY, AS WELL.
+    """
 
     def __init__(self, main_array_len: int):
         self.arrays = [list(range(1, main_array_len + 1))]
@@ -18,11 +47,7 @@ class SortPlayground:
         Dictionary of the names of the pointers, and the pointers themselves.
         """
 
-        self.swaps: int = 0
-        self.comparisons: int = 0
-        self.reads: int = 0
-        self.writes: int = 0
-        self.reversals: int = 0
+        self.statistics: Statistics = Statistics()
 
     @property
     def main_array(self):
@@ -45,20 +70,29 @@ class SortPlayground:
     def reset(self):
         """Resets counters, deletes extra arrays and all pointers."""
         self.arrays = self.arrays[:1]
-        self.pointers: dict[Pointer, PointerType] = {}
+        self.pointers = {}
 
-        self.swaps: int = 0
-        self.comparisons: int = 0
-        self.reads: int = 0
-        self.writes: int = 0
-        self.reversals: int = 0
+        self.statistics = Statistics()
 
     def change_main_array_len(self, new_len: int):
+        """
+        Sets the main array to have `new_len` as its len,
+        by making it contain all the numbers in `range(1, new_len + 1)`.
+
+        Then, calls `self.reset()`.
+        """
         self.arrays[0] = list(range(1, new_len + 1))
         self.reset()
 
     def spawn_new_array(self, size: int):
+        """
+        Appends a new array of length `size` to `self.arrays`.
+        It only contains zeros.
+
+        Increments the "array spawns" statistic by 1.
+        """
         self.arrays.append([0 for _ in range(size)])
+        self.statistics.array_spawns += 1
 
     def copy_array(self, input_array_index: int, output_array_index: int):
         for index in range(len(self.arrays[input_array_index])):
@@ -88,11 +122,12 @@ class SortPlayground:
 
     def delete_array(self, index: int):
         self.arrays.pop(index)
+        self.statistics.array_deletions += 1
 
     def read(self, index: tuple[int, int]):
         """Returns num at array_index[0], position index[1]."""
         self.pointers = {index: READ}
-        self.reads += 1
+        self.statistics.reads += 1
 
         return self.arrays[index[0]][index[1]]
 
@@ -101,14 +136,14 @@ class SortPlayground:
         self.pointers = {index: WRITE}
         self.arrays[index[0]][index[1]] = num
 
-        self.writes += 1
+        self.statistics.writes += 1
 
     def increment(self, num: int, index: tuple[int, int]):
         """Increments num at array_index[0], position index[1]."""
         self.pointers = {index: WRITE}
         self.arrays[index[0]][index[1]] += num
 
-        self.writes += 1
+        self.statistics.writes += 1
 
     def array_iter(self, array_index: int):
         """Yields nums at array_index."""
@@ -119,8 +154,8 @@ class SortPlayground:
     def compare(self, index_a: tuple[int, int], comparison: str, index_b: tuple[int, int]):
         """Compares nums at index_a and index_b and increases comparisons counter."""
         self.pointers = {index_a: READ, index_b: READ}
-        self.reads += 2
-        self.comparisons += 1
+        self.statistics.reads += 2
+        self.statistics.comparisons += 1
 
         return eval(f"{self.arrays[index_a[0]][index_a[1]]}{comparison}{self.arrays[index_b[0]][index_b[1]]}")
 
@@ -129,6 +164,6 @@ class SortPlayground:
         self.pointers = {index_a: WRITE, index_b: WRITE}
         self.arrays[index_a[0]][index_a[1]], self.arrays[index_b[0]][index_b[1]] = \
             self.arrays[index_b[0]][index_b[1]], self.arrays[index_a[0]][index_a[1]]
-        self.swaps += 1
-        self.reads += 1
-        self.writes += 2
+        self.statistics.swaps += 1
+        self.statistics.reads += 2
+        self.statistics.writes += 2
