@@ -591,6 +591,10 @@ class SortApp(tkinter.Tk):
             self.canvas.create_polygon([top_vertex, left_vertex, right_vertex], fill="black")
             self.canvas.create_text((right_vertex[0], left_vertex[1]), text=name)
 
+        for index, (statistic_name, statistic_value) in enumerate(self.sort_control.statistics.__dict__.items()):
+            y_pos: int = index * 20
+            self.canvas.create_text((0, y_pos), text=f"{statistic_name}: {statistic_value}")
+
         self.canvas.update()
 
     def clear_screen(self):
